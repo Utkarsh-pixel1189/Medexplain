@@ -77,6 +77,7 @@ class ChunkOut(BaseModel):
 class QARequest(BaseModel):
     report_id: str
     question: str = Field(min_length=1, max_length=2000)
+    thread_id: str | None = None
 
 
 class QASource(BaseModel):
@@ -88,10 +89,12 @@ class QASource(BaseModel):
 class QAResponse(BaseModel):
     answer: str
     sources: list[QASource]
+    thread_id: str
     disclaimer: str = "This is not medical advice. Always confirm results with your physician."
 
 class QAHistoryItem(BaseModel):
     id: str
+    thread_id: str
     question: str
     answer: str
     sources: list[QASource]

@@ -50,9 +50,10 @@ export type Entity = {
   date: string | null;
 };
 export type QASource = { chunk_id: string; page: number | null; snippet: string };
-export type QAResponse = { answer: string; sources: QASource[]; disclaimer: string };
+export type QAResponse = { answer: string; sources: QASource[]; thread_id: string; disclaimer: string };
 export type QAHistoryItem = {
   id: string;
+  thread_id: string;
   question: string;
   answer: string;
   sources: QASource[];
@@ -79,8 +80,8 @@ export const api = {
   ingest: (s3_key: string, original_filename: string) =>
     request<Report>("/report/ingest", { method: "POST", body: JSON.stringify({ s3_key, original_filename }) }),
 
-  ask: (report_id: string, question: string) =>
-    request<QAResponse>("/qa", { method: "POST", body: JSON.stringify({ report_id, question }) }),
+  ask: (report_id: string, question: string, thread_id?: string) =>
+    request<QAResponse>("/qa", { method: "POST", body: JSON.stringify({ report_id, question, thread_id }) }),
   getHistory: (report_id: string) =>
     request<QAHistoryItem[]>(`/qa/history/${report_id}`),
 };

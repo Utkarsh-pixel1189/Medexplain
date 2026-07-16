@@ -1,4 +1,6 @@
 """Phase 7 — QA endpoint that runs the RAG pipeline against a single report."""
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session as DBSession
 
@@ -20,11 +22,13 @@ async def ask_question(payload: QARequest, db: DBSession = Depends(get_db),
     if report.status != "parsed":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Report is not ready yet")
 
-    # Pull the last few exchanges for this report so follow-up questions
-    # ("is that normal?", "what about the other one?") have context.
+    # A missing thread_id means "start a new conversation" — generate one now
+    # so we can return it and the frontend can keep using it for this thread.
+    thread_id = payload.thread_id or str(uuid.uuid4())
+
     recent = (
         db.query(QAHistory)
-        .filter(QAHistory.report_id == payload.report_id)
+        .filter(QAHistory.thread_id == thread_id)
         .order_by(QAHistory.created_at.desc())
         .limit(4)
         .all()
@@ -35,6 +39,7 @@ async def ask_question(payload: QARequest, db: DBSession = Depends(get_db),
 
     db.add(QAHistory(
         report_id=payload.report_id,
+        thread_id=thread_id,
         user_id=user.id,
         question=payload.question,
         answer=result["answer"],
@@ -43,7 +48,7 @@ async def ask_question(payload: QARequest, db: DBSession = Depends(get_db),
     db.add(AuditLog(user_id=user.id, action="qa_query", meta={"report_id": payload.report_id}))
     db.commit()
 
-    return QAResponse(answer=result["answer"], sources=result["sources"])
+    return QAResponse(answer=result["answer"], sources=result["sources"], thread_id=thread_id)
 
 
 @router.get("/history/{report_id}", response_model=list[QAHistoryItem])
@@ -62,6 +67,7 @@ def get_history(report_id: str, db: DBSession = Depends(get_db),
     return [
         QAHistoryItem(
             id=row.id,
+            thread_id=row.thread_id,
             question=row.question,
             answer=row.answer,
             sources=row.sources or [],
