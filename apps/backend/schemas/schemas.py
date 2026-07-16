@@ -89,3 +89,10 @@ class QAResponse(BaseModel):
     answer: str
     sources: list[QASource]
     disclaimer: str = "This is not medical advice. Always confirm results with your physician."
+
+class QAHistoryItem(BaseModel):
+    id: str
+    question: str
+    answer: str
+    sources: list[QASource]
+    created_at: datetime    

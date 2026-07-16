@@ -119,3 +119,14 @@ class AuditLog(Base):
     action: Mapped[str] = mapped_column(String, nullable=False)
     meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+class QAHistory(Base):
+    __tablename__ = "qa_history"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=gen_uuid)
+    report_id: Mapped[str] = mapped_column(String, ForeignKey("reports.id"), nullable=False)
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    sources: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)    

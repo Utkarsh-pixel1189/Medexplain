@@ -51,6 +51,13 @@ export type Entity = {
 };
 export type QASource = { chunk_id: string; page: number | null; snippet: string };
 export type QAResponse = { answer: string; sources: QASource[]; disclaimer: string };
+export type QAHistoryItem = {
+  id: string;
+  question: string;
+  answer: string;
+  sources: QASource[];
+  created_at: string;
+};
 
 export const api = {
   register: (email: string, password: string) =>
@@ -74,6 +81,8 @@ export const api = {
 
   ask: (report_id: string, question: string) =>
     request<QAResponse>("/qa", { method: "POST", body: JSON.stringify({ report_id, question }) }),
+  getHistory: (report_id: string) =>
+    request<QAHistoryItem[]>(`/qa/history/${report_id}`),
 };
 
 /** Uploads a file directly to S3 using a presigned URL (bytes never touch our API). */

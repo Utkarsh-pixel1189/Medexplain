@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, ApiError, QAResponse } from "@/lib/api";
 
 type Turn = { question: string; response?: QAResponse; error?: string };
@@ -9,6 +9,31 @@ export default function QAPanel({ reportId, disabled }: { reportId: string; disa
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [loading, setLoading] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadHistory() {
+      try {
+        const history = await api.getHistory(reportId);
+        if (cancelled) return;
+        setTurns(
+          history.map((h) => ({
+            question: h.question,
+            response: { answer: h.answer, sources: h.sources, disclaimer: "This is not medical advice. Always confirm results with your physician." },
+          }))
+        );
+      } catch {
+        // no history yet, or not ready — fine to start blank
+      } finally {
+        if (!cancelled) setHistoryLoaded(true);
+      }
+    }
+    loadHistory();
+    return () => {
+      cancelled = true;
+    };
+  }, [reportId]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,7 +57,7 @@ export default function QAPanel({ reportId, disabled }: { reportId: string; disa
     <div className="border rounded-lg bg-white flex flex-col h-full">
       <div className="px-4 py-3 border-b font-medium text-sm">Ask about this report</div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-96">
-        {turns.length === 0 && (
+        {historyLoaded && turns.length === 0 && (
           <p className="text-sm text-gray-500">
             Ask things like &ldquo;what does my LDL result mean?&rdquo; or &ldquo;are any of my labs
             outside the normal range?&rdquo;
