@@ -58,7 +58,7 @@ async def retrieve_chunks(report_id: str, question: str, top_k: int) -> list[dic
     return matches
 
 
-def build_prompt(question: str, chunks: list[dict]) -> list[dict]:
+def build_prompt(question: str, chunks: list[dict], history: list[dict] | None = None) -> list[dict]:
     context_blocks = []
     for i, c in enumerate(chunks, start=1):
         snippet = c["metadata"].get("text", "")
@@ -69,14 +69,20 @@ def build_prompt(question: str, chunks: list[dict]) -> list[dict]:
     user_content = (
         f"Report excerpts:\n{context}\n\n"
         f"Patient question: {question}\n\n"
-        "Answer using only the excerpts above, citing [source N] for each claim."
+        "Answer using only the excerpts above, citing [source N] for each claim. "
+        "If this question refers back to something from earlier in the conversation "
+        "(e.g. 'that value', 'is it normal'), use the earlier turns below for context."
     )
 
-    return [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": user_content},
-    ]
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
+    # Include recent conversation turns so follow-up questions have context.
+    for turn in (history or []):
+        messages.append({"role": "user", "content": turn["question"]})
+        messages.append({"role": "assistant", "content": turn["answer"]})
+
+    messages.append({"role": "user", "content": user_content})
+    return messages
 
 async def call_mistral_chat(messages: list[dict]) -> str:
     if not settings.MISTRAL_API_KEY:
@@ -98,7 +104,7 @@ async def call_mistral_chat(messages: list[dict]) -> str:
         return data["choices"][0]["message"]["content"]
 
 
-async def answer_question(report_id: str, question: str) -> dict:
+async def answer_question(report_id: str, question: str, history: list[dict] | None = None) -> dict:
     clean_question = sanitize_question(question)
     chunks = await retrieve_chunks(report_id, clean_question, settings.RAG_TOP_K)
 
@@ -111,7 +117,7 @@ async def answer_question(report_id: str, question: str) -> dict:
             "sources": [],
         }
 
-    messages = build_prompt(clean_question, chunks)
+    messages = build_prompt(clean_question, chunks, history)
     answer = await call_mistral_chat(messages)
 
     sources = [

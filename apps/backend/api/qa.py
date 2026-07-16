@@ -20,7 +20,18 @@ async def ask_question(payload: QARequest, db: DBSession = Depends(get_db),
     if report.status != "parsed":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Report is not ready yet")
 
-    result = await answer_question(payload.report_id, payload.question)
+    # Pull the last few exchanges for this report so follow-up questions
+    # ("is that normal?", "what about the other one?") have context.
+    recent = (
+        db.query(QAHistory)
+        .filter(QAHistory.report_id == payload.report_id)
+        .order_by(QAHistory.created_at.desc())
+        .limit(4)
+        .all()
+    )
+    history = [{"question": r.question, "answer": r.answer} for r in reversed(recent)]
+
+    result = await answer_question(payload.report_id, payload.question, history=history)
 
     db.add(QAHistory(
         report_id=payload.report_id,
