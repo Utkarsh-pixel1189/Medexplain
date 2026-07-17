@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session as DBSession
 
 from core.db import get_db
-from models.models import Report, ReportEntity, ReportChunk, User, AuditLog, Embedding
+from models.models import Report, ReportEntity, ReportChunk, User, AuditLog, Embedding, QAHistory
 from schemas.schemas import ReportOut, EntityOut, ChunkOut
 from services.storage import presign_get, delete_object
 from api.deps import get_current_user
@@ -55,11 +55,13 @@ def get_chunks(report_id: str, db: DBSession = Depends(get_db), user: User = Dep
 def delete_report(report_id: str, db: DBSession = Depends(get_db), user: User = Depends(get_current_user)):
     report = _get_owned_report(report_id, db, user)
 
-    # Embeddings aren't linked to Report by a cascading FK, so clean them up
-    # explicitly using each chunk's embedding_id before the chunks themselves
-    # are removed (chunks/entities cascade automatically via the ORM
-    # relationship config in models.py).
+    # Order matters here: report_chunks.embedding_id references embeddings,
+    # so chunks must be deleted before their embeddings, and QA history
+    # references report_id directly and must go before the report itself.
     embedding_ids = [c.embedding_id for c in report.chunks if c.embedding_id]
+
+    db.query(QAHistory).filter(QAHistory.report_id == report_id).delete(synchronize_session=False)
+    db.query(ReportChunk).filter(ReportChunk.report_id == report_id).delete(synchronize_session=False)
     if embedding_ids:
         db.query(Embedding).filter(Embedding.id.in_(embedding_ids)).delete(synchronize_session=False)
 
