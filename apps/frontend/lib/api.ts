@@ -85,6 +85,7 @@ export const api = {
   getEntities: (id: string) => request<Entity[]>(`/report/${id}/entities`),
   getPdfUrl: (id: string) => request<{ url: string }>(`/report/${id}/pdf`),
   getPages: (id: string) => request<{ pages: string[] }>(`/report/${id}/pages`),
+  getPages: (id: string) => request<{ pages: string[] }>(`/report/${id}/pages`),
   deleteReport: (id: string) => request<void>(`/report/${id}`, { method: "DELETE" }),
 
   presign: (filename: string, contentType: string) =>

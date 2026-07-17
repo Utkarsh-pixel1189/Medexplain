@@ -1,4 +1,4 @@
-"""Report listing, detail, presigned PDF read, chunk retrieval, and deletion."""
+"""Report listing, detail, presigned PDF read, page previews, chunks, and deletion."""
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session as DBSession
 
@@ -40,6 +40,13 @@ def get_pdf_url(report_id: str, db: DBSession = Depends(get_db), user: User = De
     return {"url": presign_get(report.s3_key)}
 
 
+@router.get("/{report_id}/pages")
+def get_page_images(report_id: str, db: DBSession = Depends(get_db), user: User = Depends(get_current_user)):
+    report = _get_owned_report(report_id, db, user)
+    keys = report.preview_keys or []
+    return {"pages": [presign_get(k) for k in keys]}
+
+
 @router.get("/{report_id}/chunks", response_model=list[ChunkOut])
 def get_chunks(report_id: str, db: DBSession = Depends(get_db), user: User = Depends(get_current_user)):
     _get_owned_report(report_id, db, user)
@@ -55,9 +62,6 @@ def get_chunks(report_id: str, db: DBSession = Depends(get_db), user: User = Dep
 def delete_report(report_id: str, db: DBSession = Depends(get_db), user: User = Depends(get_current_user)):
     report = _get_owned_report(report_id, db, user)
 
-    # Order matters here: report_chunks.embedding_id references embeddings,
-    # so chunks must be deleted before their embeddings, and QA history
-    # references report_id directly and must go before the report itself.
     embedding_ids = [c.embedding_id for c in report.chunks if c.embedding_id]
 
     db.query(QAHistory).filter(QAHistory.report_id == report_id).delete(synchronize_session=False)
@@ -65,12 +69,15 @@ def delete_report(report_id: str, db: DBSession = Depends(get_db), user: User = 
     if embedding_ids:
         db.query(Embedding).filter(Embedding.id.in_(embedding_ids)).delete(synchronize_session=False)
 
-    # Best-effort removal from object storage — a storage hiccup shouldn't
-    # block the user from removing the report from their account.
     try:
         delete_object(report.s3_key)
     except Exception:
         pass
+    for key in (report.preview_keys or []):
+        try:
+            delete_object(key)
+        except Exception:
+            pass
 
     db.add(AuditLog(user_id=user.id, action="report_deleted", meta={"report_id": report_id}))
     db.delete(report)

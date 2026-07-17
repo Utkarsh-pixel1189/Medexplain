@@ -1,10 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, Report, Entity } from "@/lib/api";
-import LabChart from "@/components/LabChart";
+import { api, Report, Entity, QASource } from "@/lib/api";
 import SummaryCard from "@/components/SummaryCard";
-import QAPanel from "@/components/QAPanel";
+import LabChart from "@/components/LabChart";
+import PdfPreview from "@/components/PdfPreview";
+import HistoryList from "@/components/HistoryList";
+import ChatThread from "@/components/ChatThread";
+
+type Message = { question: string; answer?: string; sources?: QASource[] };
+type Thread = { threadId: string; label: string; messages: Message[] };
+
+function truncate(text: string, max: number) {
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
 
 const STATUS_STYLES: Record<string, string> = {
   uploaded: "bg-mist/60 text-inkSoft",
@@ -17,7 +26,9 @@ const STATUS_STYLES: Record<string, string> = {
 export default function ReportViewerPage({ params }: { params: { id: string } }) {
   const [report, setReport] = useState<Report | null>(null);
   const [entities, setEntities] = useState<Entity[]>([]);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pages, setPages] = useState<string[]>([]);
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,13 +41,25 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
         setReport(r);
 
         if (r.status === "parsed") {
-          const [ents, pdf] = await Promise.all([
+          const [ents, pageData, history] = await Promise.all([
             api.getEntities(params.id),
-            api.getPdfUrl(params.id),
+            api.getPages(params.id),
+            api.getHistory(params.id),
           ]);
           if (cancelled) return;
           setEntities(ents);
-          setPdfUrl(pdf.url);
+          setPages(pageData.pages);
+
+          const byThread = new Map<string, Thread>();
+          for (const item of history) {
+            let thread = byThread.get(item.thread_id);
+            if (!thread) {
+              thread = { threadId: item.thread_id, label: truncate(item.question, 40), messages: [] };
+              byThread.set(item.thread_id, thread);
+            }
+            thread.messages.push({ question: item.question, answer: item.answer, sources: item.sources });
+          }
+          setThreads(Array.from(byThread.values()));
         }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load report");
@@ -54,8 +77,22 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id, report?.status]);
 
+  function handleNewMessage(threadId: string, message: Message) {
+    setThreads((prev) => {
+      const existing = prev.find((t) => t.threadId === threadId);
+      if (existing) {
+        return prev.map((t) => (t.threadId === threadId ? { ...t, messages: [...t.messages, message] } : t));
+      }
+      return [...prev, { threadId, label: truncate(message.question, 40), messages: [message] }];
+    });
+    setSelectedThreadId(threadId);
+  }
+
   if (error) return <p className="text-sm text-pulse">{error}</p>;
   if (!report) return <p className="text-sm text-inkSoft font-mono">Loading…</p>;
+
+  const selectedThread = threads.find((t) => t.threadId === selectedThreadId);
+  const isReady = report.status === "parsed";
 
   return (
     <div className="space-y-6">
@@ -71,32 +108,42 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
           Your report is still being processed — this page will update automatically.
         </p>
       )}
-
       {report.status === "failed" && (
-        <p className="text-sm text-pulse">
-          Something went wrong while processing this report. Try re-uploading it.
-        </p>
+        <p className="text-sm text-pulse">Something went wrong while processing this report. Try re-uploading it.</p>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          {report.ai_summary && <SummaryCard summary={report.ai_summary} />}
-          {pdfUrl && (
-            <div className="border border-mist rounded-2xl overflow-hidden bg-paper">
-              <iframe src={pdfUrl} className="w-full h-96" title="Original report PDF" />
-            </div>
-          )}
-          {entities.length > 0 && (
-            <div className="border border-mist rounded-2xl bg-paper p-4">
-              <h2 className="font-mono text-xs uppercase tracking-widest text-sage mb-3">Lab trends</h2>
-              <LabChart entities={entities} />
-            </div>
-          )}
+      {isReady && (
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr_1fr] gap-4 h-[42rem]">
+          <div className="grid grid-rows-2 gap-4 min-h-0">
+            <PdfPreview pages={pages} />
+            <HistoryList
+              threads={threads}
+              selectedThreadId={selectedThreadId}
+              onSelect={setSelectedThreadId}
+              onNewChat={() => setSelectedThreadId(null)}
+              disabled={!isReady}
+            />
+          </div>
+
+          <div className="border border-mist rounded-2xl bg-paper overflow-y-auto p-5 space-y-6">
+            {report.ai_summary && <SummaryCard summary={report.ai_summary} />}
+            {entities.length > 0 && (
+              <div>
+                <h2 className="font-mono text-xs uppercase tracking-widest text-sage mb-3">Lab trends</h2>
+                <LabChart entities={entities} />
+              </div>
+            )}
+          </div>
+
+          <ChatThread
+            reportId={report.id}
+            threadId={selectedThreadId}
+            messages={selectedThread?.messages || []}
+            disabled={!isReady}
+            onNewMessage={handleNewMessage}
+          />
         </div>
-        <div className="h-[32rem]">
-          <QAPanel reportId={report.id} disabled={report.status !== "parsed"} />
-        </div>
-      </div>
+      )}
     </div>
   );
 }

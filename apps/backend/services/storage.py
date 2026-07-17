@@ -56,3 +56,7 @@ def download_bytes(s3_key: str) -> bytes:
 def delete_object(s3_key: str) -> None:
     client = _client()
     client.delete_object(Bucket=settings.S3_BUCKET, Key=s3_key)
+
+def upload_bytes(key: str, data: bytes, content_type: str) -> None:
+    client = _client()
+    client.put_object(Bucket=settings.S3_BUCKET, Key=key, Body=data, ContentType=content_type)    

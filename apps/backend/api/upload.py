@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session as DBSession
 from core.db import get_db
 from models.models import Report, User, AuditLog
 from schemas.schemas import PresignRequest, PresignResponse, IngestRequest, ReportOut
-from services.storage import build_object_key, presign_put, download_bytes
-from services.parsing import parse_pdf
+from services.storage import build_object_key, presign_put, download_bytes, upload_bytes
+from services.parsing import parse_pdf, render_pages_as_jpg
 from services.chunking import chunk_text
 from services.entity_extraction import extract_entities, extract_entities_llm
 from services.embeddings import embed_texts
@@ -29,10 +29,6 @@ def s3_presign(filename: str, content_type: str = "application/pdf",
 
 
 def _run_pipeline(report_id: str, s3_key: str, db_factory):
-    """Runs synchronously in a BackgroundTask for the MVP. Move this to a real
-    queue/worker (Phase 10 background processing) once documents get large or
-    volume increases — the function body doesn't need to change, just the
-    invocation."""
     db = db_factory()
     try:
         report = db.get(Report, report_id)
@@ -44,6 +40,17 @@ def _run_pipeline(report_id: str, s3_key: str, db_factory):
         pdf_bytes = download_bytes(s3_key)
         parsed = parse_pdf(pdf_bytes)
         chunks = chunk_text(parsed["pages"])
+
+        # Render each page as a JPG preview for the report viewer.
+        preview_keys = []
+        try:
+            preview_images = render_pages_as_jpg(pdf_bytes)
+            for idx, img_bytes in enumerate(preview_images):
+                key = f"previews/{report_id}/page-{idx + 1}.jpg"
+                upload_bytes(key, img_bytes, "image/jpeg")
+                preview_keys.append(key)
+        except Exception:
+            preview_keys = []  # preview is best-effort; parsing continues regardless
 
         import asyncio
 
@@ -68,7 +75,7 @@ def _run_pipeline(report_id: str, s3_key: str, db_factory):
         for chunk, embedding in zip(chunks, embeddings):
             embedding_row = Embedding(vector_ref=f"{report_id}:{chunk['chunk_index']}", provider="mistral")
             db.add(embedding_row)
-            db.flush()  # get embedding_row.id
+            db.flush()
 
             chunk_row = ReportChunk(
                 report_id=report_id,
@@ -79,7 +86,7 @@ def _run_pipeline(report_id: str, s3_key: str, db_factory):
                 embedding_id=embedding_row.id,
             )
             db.add(chunk_row)
-            db.flush()  # assigns chunk_row.id before we reference it below
+            db.flush()
 
             store.upsert(
                 vector_id=embedding_row.vector_ref,
@@ -103,6 +110,7 @@ def _run_pipeline(report_id: str, s3_key: str, db_factory):
                     e["date"] = None
             db.add(ReportEntity(report_id=report_id, **e))
 
+        report.preview_keys = preview_keys
         report.ai_summary = ai_summary
         report.status = "parsed"
         report.parse_status = "ocr_used" if parsed["used_ocr"] else "text_extracted"
@@ -114,7 +122,7 @@ def _run_pipeline(report_id: str, s3_key: str, db_factory):
         }
         db.add(AuditLog(user_id=report.owner_id, action="report_parsed", meta={"report_id": report_id}))
         db.commit()
-    except Exception as exc:  # noqa: BLE001 — MVP: surface failure on the report row
+    except Exception as exc:  # noqa: BLE001
         import traceback
         traceback.print_exc()
         report = db.get(Report, report_id)
@@ -124,6 +132,7 @@ def _run_pipeline(report_id: str, s3_key: str, db_factory):
             db.commit()
     finally:
         db.close()
+
 
 @router.post("/report/ingest", response_model=ReportOut, status_code=status.HTTP_202_ACCEPTED)
 def ingest(payload: IngestRequest, background_tasks: BackgroundTasks,
