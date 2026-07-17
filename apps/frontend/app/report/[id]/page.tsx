@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api, Report, Entity } from "@/lib/api";
 import LabChart from "@/components/LabChart";
+import SummaryCard from "@/components/SummaryCard";
 import QAPanel from "@/components/QAPanel";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -79,6 +80,7 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-6">
+          {report.ai_summary && <SummaryCard summary={report.ai_summary} />}
           {pdfUrl && (
             <div className="border border-mist rounded-2xl overflow-hidden bg-paper">
               <iframe src={pdfUrl} className="w-full h-96" title="Original report PDF" />

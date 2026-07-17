@@ -32,12 +32,24 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export type User = { id: string; email: string; role: string; created_at: string };
+export type AISummaryInsight = {
+  name: string;
+  value: string | null;
+  unit: string | null;
+  status: "normal" | "low" | "high" | "unclear";
+};
+export type AISummary = {
+  overview: string;
+  insights: AISummaryInsight[];
+  suggestions: string[];
+};
 export type Report = {
   id: string;
   status: string;
   parse_status: string | null;
   original_filename: string;
   parse_summary: Record<string, unknown> | null;
+  ai_summary: AISummary | null;
   created_at: string;
 };
 export type Entity = {

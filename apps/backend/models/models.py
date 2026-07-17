@@ -59,7 +59,7 @@ class Report(Base):
     parse_status: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
+    ai_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     owner: Mapped["User"] = relationship(back_populates="reports")
     chunks: Mapped[list["ReportChunk"]] = relationship(back_populates="report", cascade="all, delete-orphan")
     entities: Mapped[list["ReportEntity"]] = relationship(back_populates="report", cascade="all, delete-orphan")

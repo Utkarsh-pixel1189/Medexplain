@@ -45,6 +45,7 @@ class ReportOut(BaseModel):
     parse_status: str | None
     original_filename: str
     parse_summary: dict | None
+    ai_summary: dict | None
     created_at: datetime
 
     class Config:

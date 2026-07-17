@@ -61,6 +61,9 @@ def _run_pipeline(report_id: str, s3_key: str, db_factory):
         entities = asyncio.run(_extract_all())
         embeddings = asyncio.run(embed_texts([c["text"] for c in chunks])) if chunks else []
 
+        from services.summary import generate_summary
+        ai_summary = asyncio.run(generate_summary(parsed["full_text"], entities))
+
         store = get_vector_store()
         for chunk, embedding in zip(chunks, embeddings):
             embedding_row = Embedding(vector_ref=f"{report_id}:{chunk['chunk_index']}", provider="mistral")
@@ -100,6 +103,7 @@ def _run_pipeline(report_id: str, s3_key: str, db_factory):
                     e["date"] = None
             db.add(ReportEntity(report_id=report_id, **e))
 
+        report.ai_summary = ai_summary
         report.status = "parsed"
         report.parse_status = "ocr_used" if parsed["used_ocr"] else "text_extracted"
         report.parse_summary = {
