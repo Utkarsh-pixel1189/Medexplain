@@ -26,7 +26,7 @@ class User(Base):
     mfa_secret: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-
+    first_name: Mapped[str | None] = mapped_column(String, nullable=True)
     sessions: Mapped[list["Session"]] = relationship(back_populates="user")
     reports: Mapped[list["Report"]] = relationship(back_populates="owner")
 

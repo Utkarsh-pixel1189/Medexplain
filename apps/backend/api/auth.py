@@ -50,7 +50,7 @@ def register(payload: RegisterRequest, response: Response, request: Request, db:
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
-    user = User(email=payload.email, password_hash=hash_password(payload.password))
+    user = User(email=payload.email, first_name=payload.first_name, password_hash=hash_password(payload.password))
     db.add(user)
     db.commit()
     db.refresh(user)

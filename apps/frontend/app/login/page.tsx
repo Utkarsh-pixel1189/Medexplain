@@ -9,6 +9,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,7 +22,7 @@ export default function LoginPage() {
       if (mode === "login") {
         await api.login(email, password);
       } else {
-        await api.register(email, password);
+        await api.register(firstName, email, password);
       }
       router.push("/dashboard");
     } catch (err) {
@@ -45,6 +46,18 @@ export default function LoginPage() {
           {mode === "login" ? "Log in" : "Create an account"}
         </h1>
         <form onSubmit={onSubmit} className="space-y-4">
+          {mode === "register" && (
+            <div>
+              <label className="block text-xs font-mono uppercase tracking-wide text-inkSoft mb-1">First name</label>
+              <input
+                type="text"
+                required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full border border-mist rounded-lg px-3 py-2 text-sm focus:border-sage focus:outline-none"
+              />
+            </div>
+          )}
           <div>
             <label className="block text-xs font-mono uppercase tracking-wide text-inkSoft mb-1">Email</label>
             <input

@@ -31,18 +31,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export type User = { id: string; email: string; role: string; created_at: string };
-export type AISummaryInsight = {
-  name: string;
-  value: string | null;
-  unit: string | null;
-  status: "normal" | "low" | "high" | "unclear";
-};
-export type AISummary = {
-  overview: string;
-  insights: AISummaryInsight[];
-  suggestions: string[];
-};
+export type User = { id: string; email: string; first_name: string | null; role: string; created_at: string };
 export type Report = {
   id: string;
   status: string;
@@ -71,10 +60,21 @@ export type QAHistoryItem = {
   sources: QASource[];
   created_at: string;
 };
+export type AISummaryInsight = {
+  name: string;
+  value: string | null;
+  unit: string | null;
+  status: "normal" | "low" | "high" | "unclear";
+};
+export type AISummary = {
+  overview: string;
+  insights: AISummaryInsight[];
+  suggestions: string[];
+};
 
 export const api = {
-  register: (email: string, password: string) =>
-    request<User>("/auth/register", { method: "POST", body: JSON.stringify({ email, password }) }),
+  register: (first_name: string, email: string, password: string) =>
+    request<User>("/auth/register", { method: "POST", body: JSON.stringify({ first_name, email, password }) }),
   login: (email: string, password: string) =>
     request<User>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
@@ -84,6 +84,7 @@ export const api = {
   getReport: (id: string) => request<Report>(`/report/${id}`),
   getEntities: (id: string) => request<Entity[]>(`/report/${id}/entities`),
   getPdfUrl: (id: string) => request<{ url: string }>(`/report/${id}/pdf`),
+  getPages: (id: string) => request<{ pages: string[] }>(`/report/${id}/pages`),
   deleteReport: (id: string) => request<void>(`/report/${id}`, { method: "DELETE" }),
 
   presign: (filename: string, contentType: string) =>
@@ -95,8 +96,7 @@ export const api = {
 
   ask: (report_id: string, question: string, thread_id?: string) =>
     request<QAResponse>("/qa", { method: "POST", body: JSON.stringify({ report_id, question, thread_id }) }),
-  getHistory: (report_id: string) =>
-    request<QAHistoryItem[]>(`/qa/history/${report_id}`),
+  getHistory: (report_id: string) => request<QAHistoryItem[]>(`/qa/history/${report_id}`),
 };
 
 /** Uploads a file directly to S3 using a presigned URL (bytes never touch our API). */
