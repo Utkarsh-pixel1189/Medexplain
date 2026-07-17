@@ -72,6 +72,7 @@ export const api = {
   getReport: (id: string) => request<Report>(`/report/${id}`),
   getEntities: (id: string) => request<Entity[]>(`/report/${id}/entities`),
   getPdfUrl: (id: string) => request<{ url: string }>(`/report/${id}/pdf`),
+  deleteReport: (id: string) => request<void>(`/report/${id}`, { method: "DELETE" }),
 
   presign: (filename: string, contentType: string) =>
     request<{ upload_url: string; s3_key: string }>(

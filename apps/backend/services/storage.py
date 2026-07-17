@@ -52,3 +52,7 @@ def download_bytes(s3_key: str) -> bytes:
     client = _client()
     obj = client.get_object(Bucket=settings.S3_BUCKET, Key=s3_key)
     return obj["Body"].read()
+
+def delete_object(s3_key: str) -> None:
+    client = _client()
+    client.delete_object(Bucket=settings.S3_BUCKET, Key=s3_key)

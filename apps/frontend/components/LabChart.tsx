@@ -5,12 +5,11 @@ import {
 } from "recharts";
 import { Entity } from "@/lib/api";
 
-/** Groups lab entities by name and renders one trend line per lab. */
 export default function LabChart({ entities }: { entities: Entity[] }) {
   const labs = entities.filter((e) => e.type === "lab" && e.numeric_value !== null);
 
   if (labs.length === 0) {
-    return <p className="text-sm text-gray-500">No numeric lab values found to chart yet.</p>;
+    return <p className="text-sm text-inkSoft font-mono">No numeric values found to chart yet.</p>;
   }
 
   const byName = new Map<string, Entity[]>();
@@ -29,17 +28,17 @@ export default function LabChart({ entities }: { entities: Entity[] }) {
 
         return (
           <div key={name}>
-            <h3 className="text-sm font-medium mb-2">
-              {name} {points[0].unit ? `(${points[0].unit})` : ""}
+            <h3 className="text-sm font-medium text-ink mb-2">
+              {name} {points[0].unit ? <span className="font-mono text-inkSoft">({points[0].unit})</span> : ""}
             </h3>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" fontSize={12} />
-                  <YAxis fontSize={12} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="value" stroke="#3b6fd6" strokeWidth={2} dot />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#C9D8CD" />
+                  <XAxis dataKey="date" fontSize={11} stroke="#4B5D55" />
+                  <YAxis fontSize={11} stroke="#4B5D55" />
+                  <Tooltip contentStyle={{ borderRadius: 8, borderColor: "#C9D8CD", fontFamily: "var(--font-body)" }} />
+                  <Line type="monotone" dataKey="value" stroke="#C1502E" strokeWidth={2} dot />
                 </LineChart>
               </ResponsiveContainer>
             </div>

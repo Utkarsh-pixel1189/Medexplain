@@ -1,11 +1,11 @@
-"""Report listing, detail, presigned PDF read, and chunk retrieval endpoints."""
+"""Report listing, detail, presigned PDF read, chunk retrieval, and deletion."""
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session as DBSession
 
 from core.db import get_db
-from models.models import Report, ReportEntity, ReportChunk, User
+from models.models import Report, ReportEntity, ReportChunk, User, AuditLog, Embedding
 from schemas.schemas import ReportOut, EntityOut, ChunkOut
-from services.storage import presign_get
+from services.storage import presign_get, delete_object
 from api.deps import get_current_user
 
 router = APIRouter(prefix="/api/report", tags=["reports"])
@@ -49,3 +49,27 @@ def get_chunks(report_id: str, db: DBSession = Depends(get_db), user: User = Dep
         .order_by(ReportChunk.chunk_index)
         .all()
     )
+
+
+@router.delete("/{report_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_report(report_id: str, db: DBSession = Depends(get_db), user: User = Depends(get_current_user)):
+    report = _get_owned_report(report_id, db, user)
+
+    # Embeddings aren't linked to Report by a cascading FK, so clean them up
+    # explicitly using each chunk's embedding_id before the chunks themselves
+    # are removed (chunks/entities cascade automatically via the ORM
+    # relationship config in models.py).
+    embedding_ids = [c.embedding_id for c in report.chunks if c.embedding_id]
+    if embedding_ids:
+        db.query(Embedding).filter(Embedding.id.in_(embedding_ids)).delete(synchronize_session=False)
+
+    # Best-effort removal from object storage — a storage hiccup shouldn't
+    # block the user from removing the report from their account.
+    try:
+        delete_object(report.s3_key)
+    except Exception:
+        pass
+
+    db.add(AuditLog(user_id=user.id, action="report_deleted", meta={"report_id": report_id}))
+    db.delete(report)
+    db.commit()

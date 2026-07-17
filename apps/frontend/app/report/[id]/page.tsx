@@ -5,6 +5,14 @@ import { api, Report, Entity } from "@/lib/api";
 import LabChart from "@/components/LabChart";
 import QAPanel from "@/components/QAPanel";
 
+const STATUS_STYLES: Record<string, string> = {
+  uploaded: "bg-mist/60 text-inkSoft",
+  scanning: "bg-amber-100 text-amber-800",
+  parsing: "bg-amber-100 text-amber-800",
+  parsed: "bg-sage-light text-sage-dark",
+  failed: "bg-pulse/10 text-pulse",
+};
+
 export default function ReportViewerPage({ params }: { params: { id: string } }) {
   const [report, setReport] = useState<Report | null>(null);
   const [entities, setEntities] = useState<Entity[]>([]);
@@ -45,24 +53,26 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id, report?.status]);
 
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
-  if (!report) return <p className="text-sm text-gray-500">Loading…</p>;
+  if (error) return <p className="text-sm text-pulse">{error}</p>;
+  if (!report) return <p className="text-sm text-inkSoft font-mono">Loading…</p>;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">{report.original_filename}</h1>
-        <p className="text-sm text-gray-500">Status: {report.status}</p>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h1 className="font-display text-xl text-ink">{report.original_filename}</h1>
+        <span className={`text-xs font-mono px-2 py-1 rounded-full ${STATUS_STYLES[report.status] || "bg-mist/60 text-inkSoft"}`}>
+          {report.status}
+        </span>
       </div>
 
-      {report.status !== "parsed" && (
-        <p className="text-sm text-gray-500">
+      {report.status !== "parsed" && report.status !== "failed" && (
+        <p className="text-sm text-inkSoft font-mono">
           Your report is still being processed — this page will update automatically.
         </p>
       )}
 
       {report.status === "failed" && (
-        <p className="text-sm text-red-600">
+        <p className="text-sm text-pulse">
           Something went wrong while processing this report. Try re-uploading it.
         </p>
       )}
@@ -70,13 +80,13 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-6">
           {pdfUrl && (
-            <div className="border rounded-lg overflow-hidden bg-white">
+            <div className="border border-mist rounded-2xl overflow-hidden bg-paper">
               <iframe src={pdfUrl} className="w-full h-96" title="Original report PDF" />
             </div>
           )}
           {entities.length > 0 && (
-            <div className="border rounded-lg bg-white p-4">
-              <h2 className="text-sm font-medium mb-3">Lab trends</h2>
+            <div className="border border-mist rounded-2xl bg-paper p-4">
+              <h2 className="font-mono text-xs uppercase tracking-widest text-sage mb-3">Lab trends</h2>
               <LabChart entities={entities} />
             </div>
           )}

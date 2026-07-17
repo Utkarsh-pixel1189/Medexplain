@@ -7,12 +7,17 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: "#eef4ff",
-          500: "#3b6fd6",
-          600: "#2f59ac",
-          700: "#254687",
-        },
+        paper: "#F5F7F4",
+        ink: "#16241F",
+        inkSoft: "#4B5D55",
+        sage: { DEFAULT: "#3F6D57", light: "#E9F0EB", dark: "#2C4E3E" },
+        mist: "#C9D8CD",
+        pulse: "#C1502E",
+      },
+      fontFamily: {
+        display: ["var(--font-display)", "serif"],
+        body: ["var(--font-body)", "sans-serif"],
+        mono: ["var(--font-mono)", "monospace"],
       },
     },
   },
