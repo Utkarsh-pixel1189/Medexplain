@@ -21,7 +21,7 @@ export default function Header() {
 
   return (
     <header className="border-b border-mist bg-paper/90 backdrop-blur sticky top-0 z-10">
-      <div className="mx-auto max-w-5xl px-4 py-4 flex items-center justify-between">
+      <div className="mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
         <a href="/" className="flex items-center gap-2">
           <PulseLine className="w-8 h-5 text-sage" />
           <span className="font-display text-lg tracking-tight text-ink">Medexplain</span>

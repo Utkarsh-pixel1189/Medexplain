@@ -47,12 +47,14 @@ export default function ChatThread({
 
   return (
     <div className="border border-mist rounded-2xl bg-paper h-full flex flex-col overflow-hidden">
-      <div className="px-4 py-3 border-b border-mist flex items-center justify-between">
-        <span className="font-mono text-xs uppercase tracking-widest text-sage">Ask about this report</span>
+      <div className="px-4 h-11 border-b border-mist flex items-center justify-between gap-3">
+        <span className="font-mono text-[11px] uppercase tracking-widest text-sage whitespace-nowrap overflow-hidden text-ellipsis">
+          Ask about this report
+        </span>
         <button
           onClick={onNewChat}
           disabled={disabled}
-          className="text-xs font-medium px-3 py-1.5 rounded-full bg-sage text-paper hover:bg-sage-dark transition-colors disabled:opacity-50"
+          className="shrink-0 text-xs font-medium px-3 py-1 rounded-full bg-sage text-paper hover:bg-sage-dark transition-colors disabled:opacity-50 whitespace-nowrap"
         >
           + New chat
         </button>

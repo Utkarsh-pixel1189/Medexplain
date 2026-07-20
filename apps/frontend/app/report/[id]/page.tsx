@@ -88,33 +88,44 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
     setSelectedThreadId(threadId);
   }
 
-  if (error) return <p className="text-sm text-pulse">{error}</p>;
-  if (!report) return <p className="text-sm text-inkSoft font-mono">Loading…</p>;
+  if (error) return <p className="text-sm text-pulse px-4">{error}</p>;
+  if (!report) return <p className="text-sm text-inkSoft font-mono px-4">Loading…</p>;
 
   const selectedThread = threads.find((t) => t.threadId === selectedThreadId);
   const isReady = report.status === "parsed";
 
-  return (
-    <div className="space-y-4 -mx-4 sm:-mx-8 lg:-mx-16 px-4 sm:px-8 lg:px-16">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="font-display text-xl text-ink">{report.original_filename}</h1>
-        <span className={`text-xs font-mono px-2 py-1 rounded-full ${STATUS_STYLES[report.status] || "bg-mist/60 text-inkSoft"}`}>
-          {report.status}
-        </span>
+  if (!isReady) {
+    return (
+      <div className="space-y-4 px-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h1 className="font-display text-xl text-ink">{report.original_filename}</h1>
+          <span className={`text-xs font-mono px-2 py-1 rounded-full ${STATUS_STYLES[report.status] || "bg-mist/60 text-inkSoft"}`}>
+            {report.status}
+          </span>
+        </div>
+        {report.status !== "failed" ? (
+          <p className="text-sm text-inkSoft font-mono">
+            Your report is still being processed — this page will update automatically.
+          </p>
+        ) : (
+          <p className="text-sm text-pulse">Something went wrong while processing this report. Try re-uploading it.</p>
+        )}
       </div>
+    );
+  }
 
-      {report.status !== "parsed" && report.status !== "failed" && (
-        <p className="text-sm text-inkSoft font-mono">
-          Your report is still being processed — this page will update automatically.
-        </p>
-      )}
-      {report.status === "failed" && (
-        <p className="text-sm text-pulse">Something went wrong while processing this report. Try re-uploading it.</p>
-      )}
+  return (
+    <div className="fixed inset-x-0 top-16 bottom-0 bg-paper">
+      <div className="h-full flex flex-col overflow-y-auto lg:overflow-hidden px-4 sm:px-6 lg:px-8 py-3">
+        <div className="flex items-center justify-between flex-wrap gap-2 shrink-0 pb-3">
+          <h1 className="font-display text-lg text-ink truncate">{report.original_filename}</h1>
+          <span className={`text-xs font-mono px-2 py-1 rounded-full shrink-0 ${STATUS_STYLES[report.status]}`}>
+            {report.status}
+          </span>
+        </div>
 
-      {isReady && (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr_1fr] gap-4 h-[calc(100vh-11rem)]">
-          <div className="grid grid-rows-[1fr_auto] gap-4 min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr_1fr] gap-4 flex-1 min-h-0">
+          <div className="grid grid-rows-[1fr_auto] gap-4 min-h-0 h-full">
             <PdfPreview pages={pages} />
             <HistoryList
               threads={threads}
@@ -143,7 +154,7 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
             onNewChat={() => setSelectedThreadId(null)}
           />
         </div>
-      )}
+      </div>
     </div>
   );
 }
