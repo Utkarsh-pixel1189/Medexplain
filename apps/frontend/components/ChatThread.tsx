@@ -11,12 +11,14 @@ export default function ChatThread({
   messages,
   disabled,
   onNewMessage,
+  onNewChat,
 }: {
   reportId: string;
   threadId: string | null;
   messages: Message[];
   disabled: boolean;
   onNewMessage: (threadId: string, message: Message) => void;
+  onNewChat: () => void;
 }) {
   const [question, setQuestion] = useState("");
   const [pending, setPending] = useState<Message | null>(null);
@@ -45,8 +47,15 @@ export default function ChatThread({
 
   return (
     <div className="border border-mist rounded-2xl bg-paper h-full flex flex-col overflow-hidden">
-      <div className="px-4 py-3 border-b border-mist font-mono text-xs uppercase tracking-widest text-sage">
-        Ask about this report
+      <div className="px-4 py-3 border-b border-mist flex items-center justify-between">
+        <span className="font-mono text-xs uppercase tracking-widest text-sage">Ask about this report</span>
+        <button
+          onClick={onNewChat}
+          disabled={disabled}
+          className="text-xs font-medium px-3 py-1.5 rounded-full bg-sage text-paper hover:bg-sage-dark transition-colors disabled:opacity-50"
+        >
+          + New chat
+        </button>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {isNewChat && !pending && messages.length === 0 && (

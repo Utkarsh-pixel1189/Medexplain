@@ -95,7 +95,7 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
   const isReady = report.status === "parsed";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 -mx-4 sm:-mx-8 lg:-mx-16 px-4 sm:px-8 lg:px-16">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="font-display text-xl text-ink">{report.original_filename}</h1>
         <span className={`text-xs font-mono px-2 py-1 rounded-full ${STATUS_STYLES[report.status] || "bg-mist/60 text-inkSoft"}`}>
@@ -113,19 +113,18 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
       )}
 
       {isReady && (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr_1fr] gap-4 h-[42rem]">
-          <div className="grid grid-rows-2 gap-4 min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr_1fr] gap-4 h-[calc(100vh-11rem)]">
+          <div className="grid grid-rows-[1fr_auto] gap-4 min-h-0">
             <PdfPreview pages={pages} />
             <HistoryList
               threads={threads}
               selectedThreadId={selectedThreadId}
               onSelect={setSelectedThreadId}
-              onNewChat={() => setSelectedThreadId(null)}
               disabled={!isReady}
             />
           </div>
 
-          <div className="border border-mist rounded-2xl bg-paper overflow-y-auto p-5 space-y-6">
+          <div className="border border-mist rounded-2xl bg-paper overflow-y-auto p-5 space-y-6 min-h-0">
             {report.ai_summary && <SummaryCard summary={report.ai_summary} />}
             {entities.length > 0 && (
               <div>
@@ -141,6 +140,7 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
             messages={selectedThread?.messages || []}
             disabled={!isReady}
             onNewMessage={handleNewMessage}
+            onNewChat={() => setSelectedThreadId(null)}
           />
         </div>
       )}
