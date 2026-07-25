@@ -12,15 +12,30 @@ function parseRange(refRange: string | null): [number, number] | null {
   return [parseFloat(match[1]), parseFloat(match[2])];
 }
 
-function RangeBar({ name, value, unit, refRange }: { name: string; value: number; unit: string | null; refRange: string | null }) {
+function RangeBar({
+  name, value, unit, refRange, flagged, originalValue,
+}: {
+  name: string; value: number; unit: string | null; refRange: string | null;
+  flagged?: boolean; originalValue?: string | null;
+}) {
   const range = parseRange(refRange);
 
   if (!range) {
     return (
       <div className="py-2.5">
-        <div className="flex items-baseline justify-between">
-          <p className="text-sm font-medium text-ink">{name}</p>
-          <p className="text-sm font-mono text-inkSoft">{value} {unit || ""}</p>
+        <div className="flex items-baseline justify-between gap-2">
+          <p className="text-sm font-medium text-ink flex items-center gap-1.5">
+            {name}
+            {flagged && (
+              <span
+                title={originalValue ? `Auto-corrected from "${originalValue}" — verify against the original report` : "Extracted value couldn't be confidently verified — check the original report"}
+                className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 cursor-help"
+              >
+                {originalValue ? "corrected" : "verify"}
+              </span>
+            )}
+          </p>
+          <p className="text-sm font-mono text-inkSoft shrink-0">{value} {unit || ""}</p>
         </div>
         <p className="text-xs text-inkSoft/60 font-mono mt-1">No reference range stated</p>
       </div>
@@ -45,9 +60,19 @@ function RangeBar({ name, value, unit, refRange }: { name: string; value: number
 
   return (
     <div className="py-2.5">
-      <div className="flex items-baseline justify-between">
-        <p className="text-sm font-medium text-ink">{name}</p>
-        <p className={`text-sm font-mono ${isOutOfRange ? "text-pulse" : "text-sage-dark"}`}>
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-sm font-medium text-ink flex items-center gap-1.5">
+          {name}
+          {flagged && (
+            <span
+              title={originalValue ? `Auto-corrected from "${originalValue}" — verify against the original report` : "Extracted value couldn't be confidently verified — check the original report"}
+              className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 cursor-help"
+            >
+              {originalValue ? "corrected" : "verify"}
+            </span>
+          )}
+        </p>
+        <p className={`text-sm font-mono shrink-0 ${isOutOfRange ? "text-pulse" : "text-sage-dark"}`}>
           {value} {unit || ""}
         </p>
       </div>
@@ -96,6 +121,8 @@ export default function LabChart({ entities }: { entities: Entity[] }) {
               value={p.numeric_value as number}
               unit={p.unit}
               refRange={p.ref_range}
+              flagged={p.flagged}
+              originalValue={p.original_value}
             />
           );
         }

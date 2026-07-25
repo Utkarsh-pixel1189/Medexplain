@@ -108,6 +108,8 @@ class ReportEntity(Base):
     ref_range: Mapped[str | None] = mapped_column(String, nullable=True)
     date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    flagged: Mapped[bool] = mapped_column(Boolean, default=False)
+    original_value: Mapped[str | None] = mapped_column(String, nullable=True)
 
     report: Mapped["Report"] = relationship(back_populates="entities")
 

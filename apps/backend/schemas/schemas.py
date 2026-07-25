@@ -62,6 +62,8 @@ class EntityOut(BaseModel):
     unit: str | None
     ref_range: str | None
     date: datetime | None
+    flagged: bool
+    original_value: str | None
 
     class Config:
         from_attributes = True

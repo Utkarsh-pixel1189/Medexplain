@@ -2,8 +2,12 @@
 Phase 6 — Entity extraction & normalization.
 
 Rule-based first pass (regex) for labs, vitals, and dates — cheap, deterministic,
-and doesn't require sending PHI to an LLM. Ambiguous name variants (e.g. "HbA1c" vs
-"Hemoglobin A1c") are left for an optional LLM normalization pass in rag.py.
+and doesn't require sending PHI to an LLM. An LLM-based pass (extract_entities_llm)
+handles report formats the regex doesn't recognize. Both passes go through
+_validate_and_correct, which checks each numeric value against its stated
+reference range and corrects (or flags) values that show the fingerprint of a
+common OCR error — since this is medical data, we never silently guess when
+there's genuine ambiguity.
 """
 import re
 from datetime import datetime
@@ -47,6 +51,90 @@ def normalize_lab_name(name: str) -> str:
     return NAME_NORMALIZATION.get(key, name.strip().title())
 
 
+def _is_plausible(value: float, low: float, high: float, span: float) -> bool:
+    return low - span <= value <= high + span
+
+
+def _validate_and_correct(value: float, ref_range: str | None) -> tuple[float, bool, str | None]:
+    """Checks a value against its reference range and, if implausible, tries
+    a set of known OCR failure patterns. Returns (final_value, flagged,
+    original_value_if_corrected).
+
+    - If the value is already plausible: returned unchanged, not flagged.
+    - If exactly one correction candidate becomes plausible: auto-corrected,
+      original value preserved for transparency.
+    - If zero or multiple candidates are plausible: the raw value is kept
+      as-is but flagged as unverified — we never silently guess when there's
+      real ambiguity, since this is medical data.
+    """
+    if not ref_range:
+        return value, False, None
+
+    match = re.match(r"(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)", ref_range)
+    if not match:
+        return value, False, None
+
+    low, high = float(match.group(1)), float(match.group(2))
+    span = high - low or 1
+
+    if _is_plausible(value, low, high, span):
+        return value, False, None
+
+    value_str = str(value)
+    int_part, _, dec_part = value_str.partition(".")
+    digits_only = int_part + dec_part
+    candidates: set[float] = set()
+
+    # Prepended stray digit: 214.5 -> 14.5
+    if len(int_part) > 1:
+        try:
+            candidates.add(float(f"{int_part[1:]}.{dec_part}" if dec_part else int_part[1:]))
+        except ValueError:
+            pass
+
+    # Appended stray digit: 14.55 -> 14.5
+    if len(dec_part) > 1:
+        try:
+            candidates.add(float(f"{int_part}.{dec_part[:-1]}"))
+        except ValueError:
+            pass
+    elif len(int_part) > 2:
+        try:
+            candidates.add(float(int_part[:-1]))
+        except ValueError:
+            pass
+
+    # Missing decimal point: 145 -> 14.5 (try inserting one place from the right)
+    if len(digits_only) >= 2:
+        try:
+            candidates.add(float(f"{digits_only[:-1]}.{digits_only[-1]}"))
+        except ValueError:
+            pass
+
+    # Misplaced decimal (shifted one place): 1.45 -> 14.5, 145.0 -> 14.5
+    try:
+        candidates.add(value * 10)
+        candidates.add(value / 10)
+    except (ValueError, ZeroDivisionError):
+        pass
+
+    # Adjacent-digit transposition in the integer part: 41.5 -> 14.5
+    if len(int_part) == 2:
+        try:
+            candidates.add(float(f"{int_part[::-1]}.{dec_part}" if dec_part else int_part[::-1]))
+        except ValueError:
+            pass
+
+    candidates.discard(value)
+    plausible = [c for c in candidates if _is_plausible(c, low, high, span)]
+
+    if len(plausible) == 1:
+        return plausible[0], True, value_str
+
+    # Zero or multiple plausible candidates — genuine ambiguity, don't guess.
+    return value, True, None
+
+
 def extract_labs(text: str) -> list[dict]:
     results = []
     for m in LAB_PATTERN.finditer(text):
@@ -59,14 +147,18 @@ def extract_labs(text: str) -> list[dict]:
         ref_match = REF_RANGE_PATTERN.search(window)
         ref_range = f"{ref_match.group('low')}-{ref_match.group('high')}" if ref_match else None
 
+        final_value, flagged, original = _validate_and_correct(value, ref_range)
+
         results.append({
             "type": "lab",
             "name": name,
-            "value": str(value),
-            "numeric_value": value,
+            "value": str(final_value),
+            "numeric_value": final_value,
             "unit": unit,
             "ref_range": ref_range,
             "date": None,
+            "flagged": flagged,
+            "original_value": original,
         })
     return results
 
@@ -85,7 +177,7 @@ def extract_dates(text: str) -> list[datetime]:
 
 
 def extract_entities(parsed: dict) -> list[dict]:
-    """Top-level entry point used by the ingest pipeline."""
+    """Top-level entry point used by the ingest pipeline for the regex pass."""
     text = parsed["full_text"]
     entities = extract_labs(text)
 
@@ -99,6 +191,7 @@ def extract_entities(parsed: dict) -> list[dict]:
                 e["date"] = dates[0].isoformat()
 
     return entities
+
 
 async def extract_entities_llm(text: str) -> list[dict]:
     """LLM-based extraction fallback/upgrade over the regex extractor above.
@@ -163,21 +256,28 @@ async def extract_entities_llm(text: str) -> list[dict]:
     for item in items:
         if not isinstance(item, dict) or "name" not in item:
             continue
-        value = item.get("value")
+        raw_value = item.get("value")
         numeric_value = None
-        if value is not None:
+        if raw_value is not None:
             try:
-                numeric_value = float(str(value).strip())
+                numeric_value = float(str(raw_value).strip())
             except ValueError:
                 numeric_value = None
+
+        ref_range = item.get("ref_range")
+        flagged, original = False, None
+        if numeric_value is not None:
+            numeric_value, flagged, original = _validate_and_correct(numeric_value, ref_range)
 
         results.append({
             "type": item.get("type") or "lab",
             "name": str(item.get("name", "")).strip()[:200],
-            "value": str(value) if value is not None else None,
+            "value": str(numeric_value) if numeric_value is not None else (str(raw_value) if raw_value is not None else None),
             "numeric_value": numeric_value,
             "unit": item.get("unit"),
-            "ref_range": item.get("ref_range"),
+            "ref_range": ref_range,
             "date": item.get("date"),
+            "flagged": flagged,
+            "original_value": original,
         })
-    return results    
+    return results
