@@ -8,13 +8,18 @@ Strategy:
 3. Normalize whitespace/unicode and produce a structured JSON skeleton
    (findings / impression / labs) for downstream entity extraction.
 """
+import base64
 import io
+import json
 import re
 import unicodedata
 
 import fitz  # PyMuPDF
-import pytesseract
 from PIL import Image
+from google.cloud import vision
+from google.oauth2 import service_account
+
+from core.config import get_settings
 
 MIN_CHARS_FOR_TEXT_LAYER = 20  # below this, assume the page needs OCR
 
@@ -27,6 +32,34 @@ def normalize_text(text: str) -> str:
     return text.strip()
 
 
+_vision_client: vision.ImageAnnotatorClient | None = None
+
+
+def _get_vision_client() -> vision.ImageAnnotatorClient:
+    global _vision_client
+    if _vision_client is not None:
+        return _vision_client
+
+    settings = get_settings()
+    if not settings.GOOGLE_VISION_CREDENTIALS_BASE64:
+        raise RuntimeError("GOOGLE_VISION_CREDENTIALS_BASE64 is not set — add it to your .env")
+
+    decoded = base64.b64decode(settings.GOOGLE_VISION_CREDENTIALS_BASE64)
+    info = json.loads(decoded)
+    credentials = service_account.Credentials.from_service_account_info(info)
+    _vision_client = vision.ImageAnnotatorClient(credentials=credentials)
+    return _vision_client
+
+
+def _ocr_with_google_vision(png_bytes: bytes) -> str:
+    client = _get_vision_client()
+    image = vision.Image(content=png_bytes)
+    response = client.document_text_detection(image=image)
+    if response.error.message:
+        raise RuntimeError(f"Google Vision error: {response.error.message}")
+    return response.full_text_annotation.text
+
+
 def extract_text_per_page(pdf_bytes: bytes) -> list[dict]:
     """Returns [{page: int, text: str, method: 'text'|'ocr'}, ...]"""
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
@@ -37,10 +70,12 @@ def extract_text_per_page(pdf_bytes: bytes) -> list[dict]:
             pages.append({"page": i + 1, "text": normalize_text(raw), "method": "text"})
             continue
 
-        # Fallback to OCR: rasterize the page and run Tesseract.
-        pix = page.get_pixmap(dpi=200)
-        img = Image.open(io.BytesIO(pix.tobytes("png")))
-        ocr_text = pytesseract.image_to_string(img)
+        # Fallback to OCR: rasterize the page and run it through Google
+        # Cloud Vision's document text detection, which handles tables and
+        # structured layouts far more reliably than Tesseract.
+        pix = page.get_pixmap(dpi=300)
+        png_bytes = pix.tobytes("png")
+        ocr_text = _ocr_with_google_vision(png_bytes)
         pages.append({"page": i + 1, "text": normalize_text(ocr_text), "method": "ocr"})
     doc.close()
     return pages
