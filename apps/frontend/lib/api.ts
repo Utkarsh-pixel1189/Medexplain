@@ -49,6 +49,8 @@ export type Entity = {
   unit: string | null;
   ref_range: string | null;
   date: string | null;
+  flagged: boolean;
+  original_value: string | null;
 };
 export type QASource = { chunk_id: string; page: number | null; snippet: string };
 export type QAResponse = { answer: string; sources: QASource[]; thread_id: string; disclaimer: string };
