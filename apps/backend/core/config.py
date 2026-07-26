@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
-    GOOGLE_VISION_CREDENTIALS_BASE64: str | None = None
+    MISTRAL_VISION_MODEL: str = "pixtral-12b-2409"
 
     # --- App ---
     APP_NAME: str = "Medexplain API"

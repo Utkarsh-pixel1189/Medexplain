@@ -10,17 +10,14 @@ Strategy:
 """
 import base64
 import io
-import json
 import re
 import unicodedata
 
 import fitz  # PyMuPDF
+import httpx
 from PIL import Image
-from google.cloud import vision
-from google.oauth2 import service_account
 
 from core.config import get_settings
-
 MIN_CHARS_FOR_TEXT_LAYER = 20  # below this, assume the page needs OCR
 
 
@@ -32,32 +29,49 @@ def normalize_text(text: str) -> str:
     return text.strip()
 
 
-_vision_client: vision.ImageAnnotatorClient | None = None
+MISTRAL_CHAT_URL = "https://api.mistral.ai/v1/chat/completions"
+
+OCR_VISION_PROMPT = (
+    "Transcribe ALL text visible in this document image exactly as it appears, "
+    "preserving the layout as plain text: keep tables as rows with values and "
+    "units aligned to their labels, preserve line breaks between sections, and "
+    "do not summarize, translate, or omit anything. Output only the transcribed "
+    "text — no commentary, no markdown formatting, no code fences."
+)
 
 
-def _get_vision_client() -> vision.ImageAnnotatorClient:
-    global _vision_client
-    if _vision_client is not None:
-        return _vision_client
-
+def _ocr_with_mistral_vision(png_bytes: bytes) -> str:
+    """Uses Mistral's vision-capable model (Pixtral) to transcribe a scanned
+    page. A vision-language model reads the whole page contextually — table
+    structure, column alignment, labels next to values — which avoids the
+    column-bleed misreads that plague character-by-character OCR engines on
+    tabular documents like lab reports."""
     settings = get_settings()
-    if not settings.GOOGLE_VISION_CREDENTIALS_BASE64:
-        raise RuntimeError("GOOGLE_VISION_CREDENTIALS_BASE64 is not set — add it to your .env")
+    if not settings.MISTRAL_API_KEY:
+        raise RuntimeError("MISTRAL_API_KEY is not set — add it to your .env")
 
-    decoded = base64.b64decode(settings.GOOGLE_VISION_CREDENTIALS_BASE64)
-    info = json.loads(decoded)
-    credentials = service_account.Credentials.from_service_account_info(info)
-    _vision_client = vision.ImageAnnotatorClient(credentials=credentials)
-    return _vision_client
+    b64_image = base64.b64encode(png_bytes).decode("utf-8")
 
-
-def _ocr_with_google_vision(png_bytes: bytes) -> str:
-    client = _get_vision_client()
-    image = vision.Image(content=png_bytes)
-    response = client.document_text_detection(image=image)
-    if response.error.message:
-        raise RuntimeError(f"Google Vision error: {response.error.message}")
-    return response.full_text_annotation.text
+    with httpx.Client(timeout=90) as client:
+        resp = client.post(
+            MISTRAL_CHAT_URL,
+            headers={"Authorization": f"Bearer {settings.MISTRAL_API_KEY}"},
+            json={
+                "model": settings.MISTRAL_VISION_MODEL,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": OCR_VISION_PROMPT},
+                            {"type": "image_url", "image_url": f"data:image/png;base64,{b64_image}"},
+                        ],
+                    }
+                ],
+                "temperature": 0.0,
+            },
+        )
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"]
 
 
 def extract_text_per_page(pdf_bytes: bytes) -> list[dict]:
@@ -70,12 +84,12 @@ def extract_text_per_page(pdf_bytes: bytes) -> list[dict]:
             pages.append({"page": i + 1, "text": normalize_text(raw), "method": "text"})
             continue
 
-        # Fallback to OCR: rasterize the page and run it through Google
-        # Cloud Vision's document text detection, which handles tables and
-        # structured layouts far more reliably than Tesseract.
+        # Fallback to OCR: rasterize the page and let Mistral's vision model
+        # read it directly, understanding table structure rather than
+        # matching characters in isolation.
         pix = page.get_pixmap(dpi=300)
         png_bytes = pix.tobytes("png")
-        ocr_text = _ocr_with_google_vision(png_bytes)
+        ocr_text = _ocr_with_mistral_vision(png_bytes)
         pages.append({"page": i + 1, "text": normalize_text(ocr_text), "method": "ocr"})
     doc.close()
     return pages
