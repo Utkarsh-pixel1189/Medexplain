@@ -139,7 +139,7 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
             {report.ai_summary && <SummaryCard summary={report.ai_summary} />}
             {entities.length > 0 && (
               <div>
-                <h2 className="font-mono text-xs uppercase tracking-widest text-sage mb-3">Lab trends</h2>
+                <h2 className="font-mono text-xs uppercase tracking-widest text-sage mb-3">Report details</h2>
                 <LabChart entities={entities} />
               </div>
             )}

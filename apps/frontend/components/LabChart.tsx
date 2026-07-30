@@ -4,6 +4,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { Entity } from "@/lib/api";
+import Gauge from "@/components/Gauge";
 
 function parseRange(refRange: string | null): [number, number] | null {
   if (!refRange) return null;
@@ -12,143 +13,114 @@ function parseRange(refRange: string | null): [number, number] | null {
   return [parseFloat(match[1]), parseFloat(match[2])];
 }
 
-function RangeBar({
-  name, value, unit, refRange, flagged, originalValue,
-}: {
-  name: string; value: number; unit: string | null; refRange: string | null;
-  flagged?: boolean; originalValue?: string | null;
-}) {
-  const range = parseRange(refRange);
+const TYPE_LABELS: Record<string, string> = {
+  lab: "Lab values",
+  vital: "Vitals",
+  medication: "Medications",
+  diagnosis: "Diagnoses & findings",
+};
 
-  if (!range) {
-    return (
-      <div className="py-2.5">
-        <div className="flex items-baseline justify-between gap-2">
-          <p className="text-sm font-medium text-ink flex items-center gap-1.5">
-            {name}
-            {flagged && (
-              <span
-                title={originalValue ? `Auto-corrected from "${originalValue}" — verify against the original report` : "Extracted value couldn't be confidently verified — check the original report"}
-                className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 cursor-help"
-              >
-                {originalValue ? "corrected" : "verify"}
-              </span>
-            )}
-          </p>
-          <p className="text-sm font-mono text-inkSoft shrink-0">{value} {unit || ""}</p>
-        </div>
-        <p className="text-xs text-inkSoft/60 font-mono mt-1">No reference range stated</p>
-      </div>
-    );
-  }
-
-  const [low, high] = range;
-  const span = high - low;
-  // Pad the visual track by 30% on each side so values just outside the
-  // range are still visible on the bar, rather than clipped at the edge.
-  const padding = span * 0.3 || 1;
-  const trackMin = low - padding;
-  const trackMax = high + padding;
-  const trackSpan = trackMax - trackMin;
-
-  const clampedValue = Math.min(Math.max(value, trackMin), trackMax);
-  const valuePct = ((clampedValue - trackMin) / trackSpan) * 100;
-  const rangeStartPct = ((low - trackMin) / trackSpan) * 100;
-  const rangeWidthPct = (span / trackSpan) * 100;
-
-  const isOutOfRange = value < low || value > high;
-
+function PlainRow({ name, value, unit, note }: { name: string; value: string | null; unit?: string | null; note?: string }) {
   return (
-    <div className="py-2.5">
-      <div className="flex items-baseline justify-between gap-2">
-        <p className="text-sm font-medium text-ink flex items-center gap-1.5">
-          {name}
-          {flagged && (
-            <span
-              title={originalValue ? `Auto-corrected from "${originalValue}" — verify against the original report` : "Extracted value couldn't be confidently verified — check the original report"}
-              className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 cursor-help"
-            >
-              {originalValue ? "corrected" : "verify"}
-            </span>
-          )}
-        </p>
-        <p className={`text-sm font-mono shrink-0 ${isOutOfRange ? "text-pulse" : "text-sage-dark"}`}>
-          {value} {unit || ""}
-        </p>
+    <div className="flex items-center justify-between py-2.5 gap-3">
+      <p className="text-sm font-medium text-ink truncate">{name}</p>
+      <div className="text-right shrink-0">
+        {value && <p className="text-sm font-mono text-inkSoft">{value} {unit || ""}</p>}
+        {note && <p className="text-[10px] text-inkSoft/60 font-mono">{note}</p>}
       </div>
-      <div className="relative h-2 mt-2 rounded-full bg-mist/50">
-        <div
-          className="absolute h-full bg-sage-light rounded-full"
-          style={{ left: `${rangeStartPct}%`, width: `${rangeWidthPct}%` }}
-        />
-        <div
-          className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-paper ${isOutOfRange ? "bg-pulse" : "bg-sage"}`}
-          style={{ left: `calc(${valuePct}% - 6px)` }}
-        />
-      </div>
-      <div className="flex justify-between text-[10px] font-mono text-inkSoft/60 mt-1">
-        <span>{low}</span>
-        <span>normal range</span>
-        <span>{high}</span>
+    </div>
+  );
+}
+
+function TrendLine({ name, unit, data }: { name: string; unit: string | null; data: { date: string; value: number | null }[] }) {
+  return (
+    <div className="py-3">
+      <h3 className="text-sm font-medium text-ink mb-2">
+        {name} {unit ? <span className="font-mono text-inkSoft">({unit})</span> : ""}
+      </h3>
+      <div className="h-40">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#C9D8CD" />
+            <XAxis dataKey="date" fontSize={11} stroke="#4B5D55" />
+            <YAxis fontSize={11} stroke="#4B5D55" />
+            <Tooltip contentStyle={{ borderRadius: 8, borderColor: "#C9D8CD", fontFamily: "var(--font-body)" }} />
+            <Line type="monotone" dataKey="value" stroke="#C1502E" strokeWidth={2} dot />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
 }
 
 export default function LabChart({ entities }: { entities: Entity[] }) {
-  const labs = entities.filter((e) => e.type === "lab" && e.numeric_value !== null);
-
-  if (labs.length === 0) {
-    return <p className="text-sm text-inkSoft font-mono">No numeric values found to visualize yet.</p>;
+  if (entities.length === 0) {
+    return <p className="text-sm text-inkSoft font-mono">No data extracted from this report yet.</p>;
   }
 
-  const byName = new Map<string, Entity[]>();
-  for (const lab of labs) {
-    const list = byName.get(lab.name) || [];
-    list.push(lab);
-    byName.set(lab.name, list);
+  const byType = new Map<string, Entity[]>();
+  for (const e of entities) {
+    const list = byType.get(e.type) || [];
+    list.push(e);
+    byType.set(e.type, list);
   }
 
   return (
-    <div className="divide-y divide-mist/60">
-      {Array.from(byName.entries()).map(([name, points]) => {
-        if (points.length === 1) {
-          const p = points[0];
-          return (
-            <RangeBar
-              key={name}
-              name={name}
-              value={p.numeric_value as number}
-              unit={p.unit}
-              refRange={p.ref_range}
-              flagged={p.flagged}
-              originalValue={p.original_value}
-            />
-          );
+    <div className="space-y-8">
+      {Array.from(byType.entries()).map(([type, typeEntities]) => {
+        const byName = new Map<string, Entity[]>();
+        for (const e of typeEntities) {
+          const list = byName.get(e.name) || [];
+          list.push(e);
+          byName.set(e.name, list);
         }
 
-        // Multiple data points for this lab (e.g. from repeat reports) —
-        // a trend line is meaningful here, unlike for a single value.
-        const data = points
-          .map((p) => ({ date: p.date?.slice(0, 10) || "unknown", value: p.numeric_value }))
-          .sort((a, b) => a.date.localeCompare(b.date));
+        const trends: JSX.Element[] = [];
+        const gauges: JSX.Element[] = [];
+        const plain: JSX.Element[] = [];
+
+        Array.from(byName.entries()).forEach(([name, points], idx) => {
+          if (points.length > 1) {
+            const data = points
+              .map((p) => ({ date: p.date?.slice(0, 10) || "unknown", value: p.numeric_value }))
+              .sort((a, b) => a.date.localeCompare(b.date));
+            trends.push(<TrendLine key={`t-${idx}`} name={name} unit={points[0].unit} data={data} />);
+            return;
+          }
+
+          const p = points[0];
+          const range = p.numeric_value !== null ? parseRange(p.ref_range) : null;
+
+          if (p.numeric_value !== null && range) {
+            gauges.push(
+              <Gauge key={`g-${idx}`} name={name} value={p.numeric_value} unit={p.unit} low={range[0]} high={range[1]} />
+            );
+          } else if (p.numeric_value !== null) {
+            plain.push(
+              <PlainRow key={`p-${idx}`} name={name} value={p.value} unit={p.unit} note="No reference range stated" />
+            );
+          } else {
+            plain.push(<PlainRow key={`p-${idx}`} name={name} value={p.value} />);
+          }
+        });
 
         return (
-          <div key={name} className="py-3">
-            <h3 className="text-sm font-medium text-ink mb-2">
-              {name} {points[0].unit ? <span className="font-mono text-inkSoft">({points[0].unit})</span> : ""}
+          <div key={type}>
+            <h3 className="font-mono text-xs uppercase tracking-widest text-sage mb-3">
+              {TYPE_LABELS[type] || type}
             </h3>
-            <div className="h-40">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#C9D8CD" />
-                  <XAxis dataKey="date" fontSize={11} stroke="#4B5D55" />
-                  <YAxis fontSize={11} stroke="#4B5D55" />
-                  <Tooltip contentStyle={{ borderRadius: 8, borderColor: "#C9D8CD", fontFamily: "var(--font-body)" }} />
-                  <Line type="monotone" dataKey="value" stroke="#C1502E" strokeWidth={2} dot />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+
+            {trends.length > 0 && <div className="mb-2">{trends}</div>}
+
+            {gauges.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-4 mb-4">
+                {gauges}
+              </div>
+            )}
+
+            {plain.length > 0 && (
+              <div className="divide-y divide-mist/60">{plain}</div>
+            )}
           </div>
         );
       })}
