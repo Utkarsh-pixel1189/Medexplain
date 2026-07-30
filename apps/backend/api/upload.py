@@ -57,13 +57,24 @@ def _run_pipeline(report_id: str, s3_key: str, db_factory):
         async def _extract_all():
             regex_entities = extract_entities(parsed)
             llm_entities = await extract_entities_llm(parsed["full_text"])
-            seen_names = {e["name"].strip().lower() for e in regex_entities}
-            merged = list(regex_entities)
+
+            by_name: dict[str, dict] = {}
+            for e in regex_entities:
+                by_name[e["name"].strip().lower()] = e
+
             for e in llm_entities:
-                if e["name"].strip().lower() not in seen_names:
-                    merged.append(e)
-                    seen_names.add(e["name"].strip().lower())
-            return merged
+                key = e["name"].strip().lower()
+                existing = by_name.get(key)
+                if existing is None:
+                    # LLM found something regex missed entirely — add it.
+                    by_name[key] = e
+                elif existing.get("ref_range") is None and e.get("ref_range") is not None:
+                    # Same value, but the LLM's version has a reference range
+                    # the regex pass failed to capture — prefer the more
+                    # complete one instead of keeping the incomplete regex hit.
+                    by_name[key] = e
+
+            return list(by_name.values())
 
         entities = asyncio.run(_extract_all())
         embeddings = asyncio.run(embed_texts([c["text"] for c in chunks])) if chunks else []
