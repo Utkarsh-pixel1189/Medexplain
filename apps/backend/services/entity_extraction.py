@@ -84,7 +84,7 @@ def extract_labs(text: str) -> list[dict]:
         unit = m.group("unit")
 
         # look for a reference range shortly after the match
-        window = text[m.end(): m.end() + 40]
+        window = text[m.end(): m.end() + 120]
         ref_match = REF_RANGE_PATTERN.search(window)
         ref_range = f"{ref_match.group('low')}-{ref_match.group('high')}" if ref_match else None
 
