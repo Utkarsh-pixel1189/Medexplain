@@ -17,13 +17,23 @@ from core.config import get_settings
 
 SYSTEM_PROMPT = (
     "You write a short, plain-language summary for a patient's medical report. "
+    "You will be given each extracted value along with its computed status "
+    "(normal, low, or high) relative to its stated reference range — trust "
+    "that status as already correct, don't re-derive it yourself. "
     "Respond with ONLY a valid JSON object (no markdown, no explanation) with these fields: "
-    '"overview" (1-2 plain-language sentences on overall status, non-diagnostic), '
-    '"suggestions" (array of up to 4 short, general, non-prescriptive lifestyle notes — never '
-    "medication names, dosages, or diagnoses — each framed as general information, not an "
-    "instruction, and encouraging follow-up with a physician where relevant). "
-    "Never diagnose. If the report is too limited to summarize meaningfully, return "
-    '{"overview": "...", "suggestions": []} explaining that in the overview.'
+    '"overview" (1-2 plain-language sentences focused on whatever is NOT normal, if '
+    "anything — name the specific value(s) involved rather than speaking generically), "
+    '"suggestions" (array of up to 4 short, general, non-prescriptive notes — each one '
+    "tied to a SPECIFIC value that came back low or high, explaining in plain language "
+    "what that kind of value relates to and a general, non-prescriptive angle on it "
+    "(e.g. diet, activity, hydration, sleep — never medication names, dosages, or "
+    "supplement dosing). If every value is normal, suggestions can be general "
+    "preventive/wellness notes instead, but still avoid being generic filler — make them "
+    "relevant to the specific type of test this report is (e.g. blood count vs. thyroid "
+    "vs. lipid panel) rather than one-size-fits-all advice. "
+    "Never diagnose or suggest what condition something 'might indicate'. If the report "
+    'is too limited to summarize meaningfully, return {"overview": "...", "suggestions": []} '
+    "explaining that in the overview."
 )
 
 
