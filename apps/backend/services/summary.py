@@ -1,43 +1,82 @@
 """
 Generates an at-a-glance summary for a parsed report: a short overview,
 per-value status (normal/low/high), and general, non-prescriptive
-suggestions. Mirrors the safety posture of the QA system prompt — never
-diagnoses, never recommends medications or dosages, always defers to a
-physician for anything uncertain.
+suggestions.
+
+Status classification (normal/low/high) is computed deterministically in
+Python from each entity's stated reference range — not left to the LLM's
+judgment — since asking a language model to do numeric range comparison is
+an easy place for it to get inconsistent. The LLM is only used for the
+overview and suggestions text, which is what it's actually good at.
 """
 import json
+import re
 import httpx
 
 from core.config import get_settings
 
 SYSTEM_PROMPT = (
-    "You summarize a patient's medical report for their own understanding. "
+    "You write a short, plain-language summary for a patient's medical report. "
     "Respond with ONLY a valid JSON object (no markdown, no explanation) with these fields: "
     '"overview" (1-2 plain-language sentences on overall status, non-diagnostic), '
-    '"insights" (array of objects with "name", "value", "unit", "status" where status is '
-    'one of "normal", "low", "high", "unclear" — only classify a value if the report text or '
-    'a stated reference range supports it, otherwise use "unclear"), '
     '"suggestions" (array of up to 4 short, general, non-prescriptive lifestyle notes — never '
     "medication names, dosages, or diagnoses — each framed as general information, not an "
     "instruction, and encouraging follow-up with a physician where relevant). "
     "Never diagnose. If the report is too limited to summarize meaningfully, return "
-    '{"overview": "...", "insights": [], "suggestions": []} explaining that in the overview.'
+    '{"overview": "...", "suggestions": []} explaining that in the overview.'
 )
+
+
+def _classify_status(value: float, ref_range: str | None) -> str:
+    """Deterministic normal/low/high/unclear classification from the stated
+    reference range — plain arithmetic, not left to the LLM to judge."""
+    if ref_range is None:
+        return "unclear"
+
+    match = re.match(r"(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)", ref_range)
+    if not match:
+        return "unclear"
+
+    low, high = float(match.group(1)), float(match.group(2))
+    if value < low:
+        return "low"
+    if value > high:
+        return "high"
+    return "normal"
+
+
+def _build_insights(entities: list[dict]) -> list[dict]:
+    insights = []
+    for e in entities:
+        if e.get("type") != "lab" or e.get("numeric_value") is None:
+            continue
+        insights.append({
+            "name": e["name"],
+            "value": e.get("value"),
+            "unit": e.get("unit"),
+            "status": _classify_status(e["numeric_value"], e.get("ref_range")),
+        })
+    return insights[:12]
 
 
 async def generate_summary(full_text: str, entities: list[dict]) -> dict | None:
     settings = get_settings()
+    insights = _build_insights(entities)
+
     if not settings.MISTRAL_API_KEY:
-        return None
+        # Still return the deterministic insights even without narrative text.
+        return {"overview": "", "insights": insights, "suggestions": []}
 
     entities_context = "\n".join(
-        f"- {e['name']}: {e.get('value')} {e.get('unit') or ''} (ref range: {e.get('ref_range') or 'not stated'})"
-        for e in entities
+        f"- {e['name']}: {e.get('value')} {e.get('unit') or ''} "
+        f"(ref range: {e.get('ref_range') or 'not stated'}, status: "
+        f"{_classify_status(e['numeric_value'], e.get('ref_range')) if e.get('numeric_value') is not None else 'unclear'})"
+        for e in entities if e.get("type") == "lab"
     ) or "(no structured values extracted)"
 
     user_content = (
         f"Report text (may be partial):\n{full_text[:8000]}\n\n"
-        f"Extracted values:\n{entities_context}"
+        f"Extracted values with their computed status:\n{entities_context}"
     )
 
     async with httpx.AsyncClient(timeout=60) as client:
@@ -57,7 +96,7 @@ async def generate_summary(full_text: str, entities: list[dict]) -> dict | None:
             resp.raise_for_status()
             raw = resp.json()["choices"][0]["message"]["content"].strip()
         except Exception:
-            return None
+            return {"overview": "", "insights": insights, "suggestions": []}
 
     if raw.startswith("```"):
         raw = raw.strip("`")
@@ -67,21 +106,12 @@ async def generate_summary(full_text: str, entities: list[dict]) -> dict | None:
     try:
         data = json.loads(raw)
     except (json.JSONDecodeError, ValueError):
-        return None
+        data = {}
     if not isinstance(data, dict):
-        return None
+        data = {}
 
-    valid_statuses = ("normal", "low", "high", "unclear")
     return {
         "overview": str(data.get("overview", ""))[:1000],
-        "insights": [
-            {
-                "name": str(i.get("name", ""))[:200],
-                "value": str(i.get("value")) if i.get("value") is not None else None,
-                "unit": i.get("unit"),
-                "status": i.get("status") if i.get("status") in valid_statuses else "unclear",
-            }
-            for i in data.get("insights", []) if isinstance(i, dict)
-        ][:12],
+        "insights": insights,  # always the deterministic version, never LLM-judged
         "suggestions": [str(s)[:300] for s in data.get("suggestions", []) if isinstance(s, str)][:4],
     }
