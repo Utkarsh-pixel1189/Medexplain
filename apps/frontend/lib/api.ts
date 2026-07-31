@@ -32,6 +32,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export type User = { id: string; email: string; first_name: string | null; role: string; created_at: string };
+export type OrganMapEntry = { system: string; status: "normal" | "attention" | "unclear"; reason: string };
 export type Report = {
   id: string;
   status: string;
@@ -39,6 +40,7 @@ export type Report = {
   original_filename: string;
   parse_summary: Record<string, unknown> | null;
   ai_summary: AISummary | null;
+  organ_map: OrganMapEntry[] | null;
   created_at: string;
 };
 export type Entity = {

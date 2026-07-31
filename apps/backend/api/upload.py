@@ -79,8 +79,8 @@ def _run_pipeline(report_id: str, s3_key: str, db_factory):
         entities = asyncio.run(_extract_all())
         embeddings = asyncio.run(embed_texts([c["text"] for c in chunks])) if chunks else []
 
-        from services.summary import generate_summary
-        ai_summary = asyncio.run(generate_summary(parsed["full_text"], entities))
+        from services.organ_mapping import map_to_organs
+        organ_map = asyncio.run(map_to_organs(entities))
 
         store = get_vector_store()
         for chunk, embedding in zip(chunks, embeddings):
@@ -123,6 +123,7 @@ def _run_pipeline(report_id: str, s3_key: str, db_factory):
 
         report.preview_keys = preview_keys
         report.ai_summary = ai_summary
+        report.organ_map = organ_map
         report.status = "parsed"
         report.parse_status = "ocr_used" if parsed["used_ocr"] else "text_extracted"
         report.parse_summary = {

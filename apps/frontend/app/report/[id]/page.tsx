@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api, Report, Entity, QASource } from "@/lib/api";
 import SummaryCard from "@/components/SummaryCard";
+import BodyDiagram from "@/components/BodyDiagram";
 import LabChart from "@/components/LabChart";
 import PdfPreview from "@/components/PdfPreview";
 import HistoryList from "@/components/HistoryList";
@@ -136,6 +137,12 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
           </div>
 
           <div className="border border-mist rounded-2xl bg-paper overflow-y-auto p-5 space-y-6 min-h-0">
+            {report.organ_map && report.organ_map.length > 0 && (
+              <div>
+                <h2 className="font-mono text-xs uppercase tracking-widest text-sage mb-3">Body overview</h2>
+                <BodyDiagram organMap={report.organ_map} />
+              </div>
+            )}
             {report.ai_summary && <SummaryCard summary={report.ai_summary} />}
             {entities.length > 0 && (
               <div>

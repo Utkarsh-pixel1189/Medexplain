@@ -64,6 +64,7 @@ class Report(Base):
     chunks: Mapped[list["ReportChunk"]] = relationship(back_populates="report", cascade="all, delete-orphan")
     entities: Mapped[list["ReportEntity"]] = relationship(back_populates="report", cascade="all, delete-orphan")
     preview_keys: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    organ_map: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
 
 class ReportChunk(Base):

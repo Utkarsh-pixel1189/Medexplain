@@ -48,6 +48,7 @@ class ReportOut(BaseModel):
     original_filename: str
     parse_summary: dict | None
     ai_summary: dict | None
+    organ_map: list[dict] | None
     created_at: datetime
 
     class Config:
