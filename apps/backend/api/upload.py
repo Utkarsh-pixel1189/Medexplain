@@ -79,6 +79,9 @@ def _run_pipeline(report_id: str, s3_key: str, db_factory):
         entities = asyncio.run(_extract_all())
         embeddings = asyncio.run(embed_texts([c["text"] for c in chunks])) if chunks else []
 
+        from services.summary import generate_summary
+        ai_summary = asyncio.run(generate_summary(parsed["full_text"], entities))
+
         from services.organ_mapping import map_to_organs
         organ_map = asyncio.run(map_to_organs(entities))
 
