@@ -6,23 +6,25 @@ import { OrganMapEntry } from "@/lib/api";
 const STATUS_COLOR: Record<string, string> = {
   normal: "#3F6D57",
   attention: "#C1502E",
-  unclear: "#C9D8CD",
+  unclear: "#9BAFA6",
 };
 
-// Simplified region centers (cx, cy) on a 200x400 viewBox body outline.
-const REGION_POS: Record<string, { cx: number; cy: number; r: number }> = {
-  brain_nervous: { cx: 100, cy: 40, r: 16 },
-  thyroid: { cx: 100, cy: 78, r: 8 },
-  lungs: { cx: 100, cy: 120, r: 22 },
-  heart: { cx: 88, cy: 118, r: 10 },
-  liver: { cx: 112, cy: 158, r: 14 },
-  digestive: { cx: 100, cy: 180, r: 18 },
-  kidneys: { cx: 100, cy: 170, r: 20 },
-  blood: { cx: 100, cy: 200, r: 24 },
-  immune: { cx: 100, cy: 200, r: 30 },
-  reproductive: { cx: 100, cy: 230, r: 12 },
-  bones: { cx: 100, cy: 300, r: 60 },
-  skin: { cx: 100, cy: 200, r: 90 },
+// Organ-shaped regions (ellipses, not dots) positioned on a 200x520
+// frontal body silhouette. rx/ry give each region a shape roughly matching
+// the organ/system it represents rather than a generic circle.
+const REGIONS: Record<string, { cx: number; cy: number; rx: number; ry: number; rotate?: number }> = {
+  brain_nervous: { cx: 100, cy: 48, rx: 20, ry: 22 },
+  thyroid: { cx: 100, cy: 92, rx: 10, ry: 7 },
+  lungs: { cx: 100, cy: 150, rx: 34, ry: 42 },
+  heart: { cx: 90, cy: 152, rx: 13, ry: 16, rotate: -15 },
+  liver: { cx: 122, cy: 202, rx: 22, ry: 16, rotate: 10 },
+  kidneys: { cx: 100, cy: 210, rx: 30, ry: 14 },
+  digestive: { cx: 100, cy: 225, rx: 26, ry: 22 },
+  blood: { cx: 100, cy: 190, rx: 46, ry: 90 },
+  immune: { cx: 100, cy: 190, rx: 50, ry: 96 },
+  reproductive: { cx: 100, cy: 268, rx: 16, ry: 12 },
+  bones: { cx: 100, cy: 380, rx: 50, ry: 140 },
+  skin: { cx: 100, cy: 260, rx: 62, ry: 220 },
 };
 
 const SYSTEM_LABELS: Record<string, string> = {
@@ -31,6 +33,55 @@ const SYSTEM_LABELS: Record<string, string> = {
   thyroid: "Thyroid", bones: "Bones", brain_nervous: "Brain & nervous system",
   reproductive: "Reproductive system", skin: "Skin",
 };
+
+// Deep systemic regions render behind more localized organs so a "blood"
+// or "skin" highlight doesn't visually bury the heart/liver/etc.
+const RENDER_ORDER = [
+  "skin", "immune", "blood", "bones", "brain_nervous", "thyroid",
+  "lungs", "heart", "liver", "kidneys", "digestive", "reproductive",
+];
+
+function Silhouette() {
+  return (
+    <path
+      d="M100 8
+         C 112 8 121 18 121 32
+         C 121 42 116 49 110 53
+         C 128 58 142 66 150 82
+         C 158 96 160 112 158 128
+         L 172 160
+         C 176 168 174 178 166 182
+         C 160 185 154 182 151 176
+         L 140 148
+         L 142 210
+         C 148 240 150 270 146 300
+         L 152 420
+         C 154 440 152 460 146 478
+         L 128 478
+         C 124 460 122 440 122 420
+         L 118 320
+         L 110 320
+         L 106 420
+         C 106 440 104 460 100 478
+         L 82 478
+         C 78 460 76 440 76 420
+         L 82 300
+         C 78 270 80 240 86 210
+         L 88 148
+         L 77 176
+         C 74 182 68 185 62 182
+         C 54 178 52 168 56 160
+         L 70 128
+         C 68 112 70 96 78 82
+         C 86 66 100 58 118 53
+         C 112 49 107 42 107 32
+         C 107 18 88 8 100 8 Z"
+      fill="#E9F0EB"
+      stroke="#C9D8CD"
+      strokeWidth="2"
+    />
+  );
+}
 
 export default function BodyDiagram({ organMap }: { organMap: OrganMapEntry[] }) {
   const [active, setActive] = useState<string | null>(null);
@@ -45,48 +96,69 @@ export default function BodyDiagram({ organMap }: { organMap: OrganMapEntry[] })
 
   const byName = new Map(organMap.map((e) => [e.system, e]));
   const activeEntry = active ? byName.get(active) : null;
+  const orderedSystems = RENDER_ORDER.filter((s) => byName.has(s));
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4 items-start">
-      <svg viewBox="0 0 200 400" className="w-full max-w-[220px] mx-auto sm:mx-0 shrink-0">
-        {/* simplified body outline */}
-        <path
-          d="M100 20 C112 20 122 30 122 44 C122 56 116 62 112 66
-             C130 74 140 96 140 120 L140 200
-             C140 210 136 216 128 220
-             L132 300 C133 320 128 340 118 380
-             L110 380 L108 240
-             L92 240 L90 380 L82 380
-             C72 340 67 320 68 300 L72 220
-             C64 216 60 210 60 200 L60 120
-             C60 96 70 74 88 66
-             C84 62 78 56 78 44 C78 30 88 20 100 20 Z"
-          fill="none"
-          stroke="#C9D8CD"
-          strokeWidth="2"
-        />
-        {Object.entries(REGION_POS).map(([system, pos]) => {
-          const entry = byName.get(system);
-          if (!entry) return null;
+    <div className="flex flex-col sm:flex-row gap-5 items-start">
+      <svg viewBox="0 0 200 500" className="w-full max-w-[200px] mx-auto sm:mx-0 shrink-0">
+        <defs>
+          <filter id="organGlow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        <Silhouette />
+
+        {orderedSystems.map((system) => {
+          const entry = byName.get(system)!;
+          const pos = REGIONS[system];
           const color = STATUS_COLOR[entry.status];
           const isActive = active === system;
+          const baseOpacity = entry.status === "attention" ? 0.55 : 0.32;
+
           return (
-            <circle
+            <g
               key={system}
-              cx={pos.cx}
-              cy={pos.cy}
-              r={isActive ? pos.r * 0.35 + 4 : pos.r * 0.3}
-              fill={color}
-              fillOpacity={entry.status === "attention" ? 0.85 : 0.5}
-              stroke={isActive ? color : "none"}
-              strokeWidth={isActive ? 2 : 0}
-              className="cursor-pointer transition-all duration-300"
               onClick={() => setActive(isActive ? null : system)}
+              className="cursor-pointer"
+              transform={pos.rotate ? `rotate(${pos.rotate} ${pos.cx} ${pos.cy})` : undefined}
             >
-              {entry.status === "attention" && (
-                <animate attributeName="fill-opacity" values="0.85;0.4;0.85" dur="2s" repeatCount="indefinite" />
+              <ellipse
+                cx={pos.cx}
+                cy={pos.cy}
+                rx={pos.rx}
+                ry={pos.ry}
+                fill={color}
+                fillOpacity={isActive ? baseOpacity + 0.25 : baseOpacity}
+                filter="url(#organGlow)"
+                className="transition-all duration-300"
+              >
+                {entry.status === "attention" && (
+                  <animate
+                    attributeName="fill-opacity"
+                    values={`${baseOpacity};${baseOpacity + 0.3};${baseOpacity}`}
+                    dur="2.2s"
+                    repeatCount="indefinite"
+                  />
+                )}
+              </ellipse>
+              {isActive && (
+                <ellipse
+                  cx={pos.cx}
+                  cy={pos.cy}
+                  rx={pos.rx}
+                  ry={pos.ry}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth="2"
+                  strokeDasharray="4 3"
+                />
               )}
-            </circle>
+            </g>
           );
         })}
       </svg>
@@ -98,7 +170,7 @@ export default function BodyDiagram({ organMap }: { organMap: OrganMapEntry[] })
             <p className="text-xs text-inkSoft mt-1">{activeEntry.reason}</p>
           </div>
         ) : (
-          <p className="text-xs text-inkSoft/70 font-mono">Tap a highlighted region to see details</p>
+          <p className="text-xs text-inkSoft/70 font-mono">Tap a highlighted area to see details</p>
         )}
 
         <div className="flex flex-wrap gap-2 pt-2">
@@ -106,7 +178,7 @@ export default function BodyDiagram({ organMap }: { organMap: OrganMapEntry[] })
             <button
               key={e.system}
               onClick={() => setActive(active === e.system ? null : e.system)}
-              className={`text-[11px] font-mono px-2 py-1 rounded-full border transition-colors ${
+              className={`text-[11px] font-mono px-2.5 py-1 rounded-full border transition-colors ${
                 active === e.system ? "border-sage bg-sage-light" : "border-mist hover:border-sage"
               }`}
               style={{ color: STATUS_COLOR[e.status] }}
