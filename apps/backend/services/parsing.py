@@ -90,7 +90,12 @@ def extract_text_per_page(pdf_bytes: bytes) -> list[dict]:
         pix = page.get_pixmap(dpi=300)
         png_bytes = pix.tobytes("png")
         ocr_text = _ocr_with_mistral_vision(png_bytes)
-        pages.append({"page": i + 1, "text": normalize_text(ocr_text), "method": "ocr"})
+        pages.append({
+            "page": i + 1,
+            "text": normalize_text(ocr_text),
+            "method": "ocr",
+            "image_bytes": png_bytes,  # kept for direct vision-based entity extraction
+        })
     doc.close()
     return pages
 

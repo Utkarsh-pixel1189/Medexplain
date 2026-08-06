@@ -226,3 +226,98 @@ async def extract_entities_llm(text: str) -> list[dict]:
             "original_value": None,
         })
     return results
+
+async def extract_entities_vision(image_bytes: bytes) -> list[dict]:
+    """Reads a scanned page's table directly from the image, rather than
+    from already-transcribed text — avoids compounding whatever column
+    misalignment the earlier text-OCR pass may have introduced. Best for
+    rows that look structurally similar to each other (e.g. a block of
+    percentage values), where a linear text stream more easily loses which
+    number belongs to which row."""
+    import base64
+    import json
+    import httpx
+    from core.config import get_settings
+
+    settings = get_settings()
+    if not settings.MISTRAL_API_KEY:
+        return []
+
+    b64_image = base64.b64encode(image_bytes).decode("utf-8")
+
+    prompt = (
+        "Look at this report image directly (not any transcription of it) and extract "
+        "every measurable clinical value from any tables shown, using the actual visual "
+        "column alignment to correctly match each row's value to its own unit and "
+        "reference range — this matters most for blocks of similar-looking rows (e.g. "
+        "a set of percentage values), where column alignment is the only reliable way "
+        "to avoid mixing up which range belongs to which row. Respond with ONLY a valid "
+        'JSON array (no markdown, no code fences) of objects with fields: "type" (one '
+        'of "lab", "vital", "medication", "diagnosis"), "name", "value", "unit" (or '
+        'null), "ref_range" (as "low-high", or null only if genuinely not printed on '
+        'that row), "date" (or null). If nothing qualifies, return [].'
+    )
+
+    async with httpx.AsyncClient(timeout=90) as client:
+        try:
+            resp = await client.post(
+                "https://api.mistral.ai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.MISTRAL_API_KEY}"},
+                json={
+                    "model": settings.MISTRAL_VISION_MODEL,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {"type": "image_url", "image_url": f"data:image/png;base64,{b64_image}"},
+                            ],
+                        }
+                    ],
+                    "temperature": 0.0,
+                },
+            )
+            resp.raise_for_status()
+            raw = resp.json()["choices"][0]["message"]["content"].strip()
+        except Exception:
+            return []
+
+    if raw.startswith("```"):
+        raw = raw.strip("`")
+        if raw.lower().startswith("json"):
+            raw = raw[4:].strip()
+
+    try:
+        items = json.loads(raw)
+    except (json.JSONDecodeError, ValueError):
+        return []
+    if not isinstance(items, list):
+        return []
+
+    results = []
+    for item in items:
+        if not isinstance(item, dict) or "name" not in item:
+            continue
+        raw_value = item.get("value")
+        numeric_value = None
+        if raw_value is not None:
+            try:
+                numeric_value = float(str(raw_value).strip())
+            except ValueError:
+                numeric_value = None
+
+        ref_range = item.get("ref_range")
+        flagged = _validate(numeric_value, ref_range) if numeric_value is not None else False
+
+        results.append({
+            "type": item.get("type") or "lab",
+            "name": str(item.get("name", "")).strip()[:200],
+            "value": str(numeric_value) if numeric_value is not None else (str(raw_value) if raw_value is not None else None),
+            "numeric_value": numeric_value,
+            "unit": item.get("unit"),
+            "ref_range": ref_range,
+            "date": item.get("date"),
+            "flagged": flagged,
+            "original_value": None,
+        })
+    return results

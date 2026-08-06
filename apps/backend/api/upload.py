@@ -8,7 +8,7 @@ from schemas.schemas import PresignRequest, PresignResponse, IngestRequest, Repo
 from services.storage import build_object_key, presign_put, download_bytes, upload_bytes
 from services.parsing import parse_pdf, render_pages_as_jpg
 from services.chunking import chunk_text
-from services.entity_extraction import extract_entities, extract_entities_llm
+from services.entity_extraction import extract_entities, extract_entities_llm, extract_entities_vision
 from services.embeddings import embed_texts
 from services.vector_store import get_vector_store
 from api.deps import get_current_user
@@ -58,17 +58,18 @@ def _run_pipeline(report_id: str, s3_key: str, db_factory):
             regex_entities = extract_entities(parsed)
             llm_entities = await extract_entities_llm(parsed["full_text"])
 
+            vision_entities: list[dict] = []
+            for pg in parsed["pages"]:
+                if pg.get("method") == "ocr" and pg.get("image_bytes"):
+                    vision_entities.extend(await extract_entities_vision(pg["image_bytes"]))
+
             candidates: dict[str, list[dict]] = {}
-            for e in regex_entities + llm_entities:
+            for e in regex_entities + llm_entities + vision_entities:
                 key = e["name"].strip().lower()
                 candidates.setdefault(key, []).append(e)
 
             merged = []
             for key, options in candidates.items():
-                # Prefer whichever candidate actually captured a reference
-                # range — regardless of which pass (regex or LLM) found it —
-                # since either can miss it depending on how the OCR text for
-                # this particular row came out.
                 with_range = [o for o in options if o.get("ref_range")]
                 best = with_range[0] if with_range else options[0]
                 merged.append(best)
