@@ -58,23 +58,22 @@ def _run_pipeline(report_id: str, s3_key: str, db_factory):
             regex_entities = extract_entities(parsed)
             llm_entities = await extract_entities_llm(parsed["full_text"])
 
-            by_name: dict[str, dict] = {}
-            for e in regex_entities:
-                by_name[e["name"].strip().lower()] = e
-
-            for e in llm_entities:
+            candidates: dict[str, list[dict]] = {}
+            for e in regex_entities + llm_entities:
                 key = e["name"].strip().lower()
-                existing = by_name.get(key)
-                if existing is None:
-                    # LLM found something regex missed entirely — add it.
-                    by_name[key] = e
-                elif existing.get("ref_range") is None and e.get("ref_range") is not None:
-                    # Same value, but the LLM's version has a reference range
-                    # the regex pass failed to capture — prefer the more
-                    # complete one instead of keeping the incomplete regex hit.
-                    by_name[key] = e
+                candidates.setdefault(key, []).append(e)
 
-            return list(by_name.values())
+            merged = []
+            for key, options in candidates.items():
+                # Prefer whichever candidate actually captured a reference
+                # range — regardless of which pass (regex or LLM) found it —
+                # since either can miss it depending on how the OCR text for
+                # this particular row came out.
+                with_range = [o for o in options if o.get("ref_range")]
+                best = with_range[0] if with_range else options[0]
+                merged.append(best)
+
+            return merged
 
         entities = asyncio.run(_extract_all())
         embeddings = asyncio.run(embed_texts([c["text"] for c in chunks])) if chunks else []

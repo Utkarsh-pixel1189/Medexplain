@@ -150,15 +150,21 @@ async def extract_entities_llm(text: str) -> list[dict]:
 
     system_prompt = (
         "Extract every measurable clinical value, vital sign, or lab result from the "
-        "report text below. Respond with ONLY a valid JSON array (no markdown, no "
+        "report text below. This text may come from a multi-column table (e.g. "
+        "INVESTIGATION / RESULT / UNITS / REFERENCE RANGE) where OCR has sometimes "
+        "broken the columns apart or reordered them — use your judgment to reconnect "
+        "each value with its correct unit and reference range even if they don't "
+        "appear on the same line. Every row in a lab table almost always has a "
+        "reference range somewhere in the source — look carefully before concluding "
+        "one isn't stated. Respond with ONLY a valid JSON array (no markdown, no "
         "explanation, no code fences) of objects with exactly these fields: "
         '"type" (one of "lab", "vital", "medication", "diagnosis"), "name" (string), '
-        '"value" (string), "unit" (string or null), "ref_range" (string or null), '
+        '"value" (string), "unit" (string or null), "ref_range" (string in the exact '
+        'form "low-high", or null only if truly absent from the source), '
         '"date" (ISO 8601 date string or null). '
         "Only include items with an actual numeric or clearly stated value — skip "
         "narrative text with no measurable value. If nothing qualifies, return []."
     )
-
     async with httpx.AsyncClient(timeout=60) as client:
         try:
             resp = await client.post(
