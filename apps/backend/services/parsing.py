@@ -148,3 +148,16 @@ def parse_pdf(pdf_bytes: bytes) -> dict:
         "used_ocr": used_ocr,
         "num_pages": len(pages),
     }
+
+def render_pages_as_jpg(pdf_bytes: bytes, dpi: int = 150) -> list[bytes]:
+    """Renders each page as a JPG for the report viewer's image preview."""
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    images = []
+    for page in doc:
+        pix = page.get_pixmap(dpi=dpi)
+        img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=85)
+        images.append(buf.getvalue())
+    doc.close()
+    return images
