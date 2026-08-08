@@ -8,7 +8,7 @@ export default function Marker({ children }: { children: React.ReactNode }) {
         preserveAspectRatio="none"
         aria-hidden="true"
       >
-        <path d="M2 8 C 60 2, 140 2, 198 8" stroke="#1D74F2" strokeWidth="10" fill="none" strokeLinecap="round" />
+        <path d="M2 8 C 60 2, 140 2, 198 8" stroke="#E9E24A" strokeWidth="10" fill="none" strokeLinecap="round" />
       </svg>
       <span className="relative">{children}</span>
     </span>
