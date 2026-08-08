@@ -32,10 +32,10 @@ export default function HomePage() {
   return (
     <div className="space-y-6">
       <section className="text-center space-y-4">
-        <h1 className="font-display font-bold text-4xl sm:text-6xl leading-[1.05] text-ink max-w-3xl mx-auto">
+        <h1 className="font-display font-bold text-4xl sm:text-6xl leading-[1.05] text-ink max-w-5xl mx-auto">
           Unlock <Marker>effortless</Marker> understanding of your medical reports.
         </h1>
-        <p className="text-inkSoft max-w-xl mx-auto leading-relaxed text-lg">
+        <p className="text-inkSoft max-w-2xl mx-auto leading-relaxed text-lg">
           Upload a lab or imaging report as a PDF. Medexplain reads it, surfaces the
           values that matter, and answers your follow-up questions directly from
           your own report.
@@ -48,7 +48,7 @@ export default function HomePage() {
           alt="How Medexplain works: upload, read, surface values, answer questions"
           width={1200}
           height={630}
-          className="w-full max-w-2xl mx-auto h-auto"
+          className="w-full max-w-4xl mx-auto h-auto"
           priority
         />
       </section>
