@@ -30,8 +30,8 @@ const STEPS = [
 
 export default function HomePage() {
   return (
-    <div className="space-y-10">
-      <section className="text-center space-y-5">
+    <div className="space-y-6">
+      <section className="text-center space-y-4">
         <h1 className="font-display font-bold text-4xl sm:text-6xl leading-[1.05] text-ink max-w-3xl mx-auto">
           Unlock <Marker>effortless</Marker> understanding of your medical reports.
         </h1>
@@ -48,7 +48,7 @@ export default function HomePage() {
           alt="How Medexplain works: upload, read, surface values, answer questions"
           width={1200}
           height={630}
-          className="w-full max-w-3xl mx-auto"
+          className="w-full max-w-2xl mx-auto h-auto"
           priority
         />
       </section>
@@ -68,7 +68,7 @@ export default function HomePage() {
         </a>
       </section>
 
-      <section className="grid sm:grid-cols-3 gap-5 pt-6">
+      <section className="grid sm:grid-cols-3 gap-5 pt-2">
         {STEPS.map((step) => (
           <div
             key={step.n}
