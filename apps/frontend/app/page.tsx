@@ -48,7 +48,7 @@ export default function HomePage() {
           alt="How Medexplain works: upload, read, surface values, answer questions"
           width={1200}
           height={630}
-          className="w-full max-w-4xl mx-auto h-auto"
+          className="w-full max-w-lg mx-auto h-auto"
           priority
         />
       </section>
@@ -56,7 +56,7 @@ export default function HomePage() {
       <section className="flex flex-wrap gap-3 justify-center">
         <a
           href="/login"
-          className="px-6 py-3.5 rounded-full bg-sage text-paper text-sm font-semibold transition-all hover:bg-sage-dark hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
+          className="px-6 py-3.5 rounded-full bg-accent text-paper text-sm font-semibold transition-all hover:bg-accent-dark hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
         >
           Get started with an upload
         </a>

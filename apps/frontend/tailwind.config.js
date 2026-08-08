@@ -11,6 +11,7 @@ module.exports = {
         ink: "#16231B",
         inkSoft: "#47594C",
         sage: { DEFAULT: "#1F3327", light: "#E4EDE2", dark: "#0F1D14" },
+        accent: { DEFAULT: "#4166F5", dark: "#3454D1" },
         mist: "#DCD5C2",
         pulse: "#C1502E",
         highlight: "#E9E24A",
