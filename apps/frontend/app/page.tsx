@@ -1,4 +1,6 @@
-import PulseLine from "@/components/PulseLine";
+import Marker from "@/components/Marker";
+import SketchDivider from "@/components/SketchDivider";
+import HeroSketch from "@/components/HeroSketch";
 
 const STEPS = [
   { n: "01", title: "Upload", body: "Drop in a scanned or digital PDF report — lab work, imaging, ECGs, anything." },
@@ -8,33 +10,37 @@ const STEPS = [
 
 export default function HomePage() {
   return (
-    <div className="space-y-24">
-      <section className="space-y-8">
-        <p className="font-mono text-xs tracking-widest text-sage uppercase">Upload · Understand · Ask</p>
-        <h1 className="font-display text-4xl sm:text-5xl leading-[1.1] text-ink max-w-2xl">
-          Your medical report, explained in plain language.
+    <div className="space-y-16">
+      <section className="text-center space-y-8">
+        <h1 className="font-display font-bold text-4xl sm:text-6xl leading-[1.05] text-ink max-w-3xl mx-auto">
+          Unlock <Marker>effortless</Marker> understanding of your medical reports.
         </h1>
-        <p className="text-inkSoft max-w-xl leading-relaxed">
+        <p className="text-inkSoft max-w-xl mx-auto leading-relaxed text-lg">
           Upload a lab or imaging report as a PDF. Medexplain reads it, surfaces the
           values that matter, and answers your follow-up questions directly from
-          your own report — always with a reminder to confirm with your physician.
+          your own report.
         </p>
-        <div className="flex flex-wrap gap-3 pt-2">
-          <a href="/login" className="px-5 py-2.5 rounded-full bg-sage text-paper text-sm font-medium hover:bg-sage-dark transition-colors">
-            Get started
+        <div className="flex flex-wrap gap-3 justify-center pt-2">
+          <a href="/login" className="px-6 py-3.5 rounded-full bg-sage text-paper text-sm font-semibold hover:bg-sage-dark transition-colors">
+            Get started with an upload
           </a>
-          <a href="/dashboard" className="px-5 py-2.5 rounded-full border border-mist text-sm font-medium text-ink hover:border-sage transition-colors">
+          <a href="/dashboard" className="px-6 py-3.5 rounded-full border-2 border-ink text-sm font-semibold text-ink hover:bg-ink hover:text-paper transition-colors">
             Go to dashboard
           </a>
         </div>
-        <PulseLine animate className="w-full h-12 text-pulse mt-6" />
       </section>
 
-      <section className="grid sm:grid-cols-3 gap-8 border-t border-mist pt-12">
+      <SketchDivider />
+
+      <section className="pt-4">
+        <HeroSketch />
+      </section>
+
+      <section className="grid sm:grid-cols-3 gap-8 pt-8">
         {STEPS.map((step) => (
           <div key={step.n} className="space-y-2">
-            <span className="font-mono text-xs text-pulse">{step.n}</span>
-            <h3 className="font-display text-lg text-ink">{step.title}</h3>
+            <span className="font-display font-bold text-2xl text-sage">{step.n}</span>
+            <h3 className="font-display font-bold text-lg text-ink">{step.title}</h3>
             <p className="text-sm text-inkSoft leading-relaxed">{step.body}</p>
           </div>
         ))}

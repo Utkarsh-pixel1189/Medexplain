@@ -7,27 +7,10 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid #3f6d57;
+  outline: 2px solid #1f3327;
   outline-offset: 2px;
 }
 
 ::selection {
-  background: #c9d8cd;
-}
-
-@keyframes draw-pulse {
-  from { stroke-dashoffset: 600; }
-  to { stroke-dashoffset: 0; }
-}
-
-.animate-draw-pulse {
-  stroke-dasharray: 600;
-  animation: draw-pulse 1.6s ease-out forwards;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-draw-pulse {
-    animation: none;
-    stroke-dashoffset: 0;
-  }
+  background: #e9e24a;
 }

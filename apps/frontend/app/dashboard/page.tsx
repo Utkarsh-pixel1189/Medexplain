@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, Report } from "@/lib/api";
 import UploadForm from "@/components/UploadForm";
 import ReportList from "@/components/ReportList";
+import Marker from "@/components/Marker";
 
 export default function DashboardPage() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -55,10 +56,9 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <p className="font-mono text-xs uppercase tracking-widest text-sage">Dashboard</p>
-        <h1 className="font-display text-2xl text-ink mt-1">Your reports</h1>
-      </div>
+      <h1 className="font-display font-bold text-3xl text-ink">
+        Your <Marker>reports</Marker>
+      </h1>
       <UploadForm onUploaded={refresh} />
       {loading ? (
         <p className="text-sm text-inkSoft font-mono">Loading…</p>

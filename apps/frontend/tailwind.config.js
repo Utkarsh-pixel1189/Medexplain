@@ -7,15 +7,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        paper: "#F5F7F4",
-        ink: "#16241F",
-        inkSoft: "#4B5D55",
-        sage: { DEFAULT: "#3F6D57", light: "#E9F0EB", dark: "#2C4E3E" },
-        mist: "#C9D8CD",
+        paper: "#F7F3E8",
+        ink: "#16231B",
+        inkSoft: "#47594C",
+        sage: { DEFAULT: "#1F3327", light: "#E4EDE2", dark: "#0F1D14" },
+        mist: "#DCD5C2",
         pulse: "#C1502E",
+        highlight: "#E9E24A",
       },
       fontFamily: {
-        display: ["var(--font-display)", "serif"],
+        display: ["var(--font-display)", "sans-serif"],
         body: ["var(--font-body)", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"],
       },

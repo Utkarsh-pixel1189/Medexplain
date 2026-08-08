@@ -110,10 +110,10 @@ function TrendLine({ name, unit, data }: { name: string; unit: string | null; da
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#C9D8CD" />
-            <XAxis dataKey="date" fontSize={11} stroke="#4B5D55" />
-            <YAxis fontSize={11} stroke="#4B5D55" />
-            <Tooltip contentStyle={{ borderRadius: 8, borderColor: "#C9D8CD", fontFamily: "var(--font-body)" }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#DCD5C2" />
+            <XAxis dataKey="date" fontSize={11} stroke="#47594C" />
+            <YAxis fontSize={11} stroke="#47594C" />
+            <Tooltip contentStyle={{ borderRadius: 8, borderColor: "#DCD5C2", fontFamily: "var(--font-body)" }} />
             <Line type="monotone" dataKey="value" stroke="#C1502E" strokeWidth={2} dot />
           </LineChart>
         </ResponsiveContainer>
