@@ -3,10 +3,16 @@ Phase 4 — PDF parsing & OCR pipeline.
 
 Strategy:
 1. Try embedded text extraction (PyMuPDF). Cheap and accurate for text-native PDFs.
-2. If a page yields little/no text, rasterize it and run Tesseract OCR as a fallback
-   (handles scanned reports / photographed reports).
+2. If a page yields little/no text, rasterize it and run it through Mistral's
+   vision model (Pixtral) as an OCR fallback — it reads the whole page
+   contextually (tables, headers, values together) rather than matching
+   individual characters in isolation, which handles scanned lab-report
+   tables far more reliably than a traditional OCR engine like Tesseract.
 3. Normalize whitespace/unicode and produce a structured JSON skeleton
-   (findings / impression / labs) for downstream entity extraction.
+   (findings / impression / labs) for downstream entity extraction. The raw
+   page image is also kept alongside OCR'd pages so a later extraction step
+   can read the table directly from the image rather than from transcribed
+   text alone.
 """
 import base64
 import io
@@ -18,16 +24,8 @@ import httpx
 from PIL import Image
 
 from core.config import get_settings
+
 MIN_CHARS_FOR_TEXT_LAYER = 20  # below this, assume the page needs OCR
-
-
-def normalize_text(text: str) -> str:
-    text = unicodedata.normalize("NFKC", text)
-    # collapse repeated whitespace, keep paragraph breaks
-    text = re.sub(r"[ \t]+", " ", text)
-    text = re.sub(r"\n{3,}", "\n\n", text)
-    return text.strip()
-
 
 MISTRAL_CHAT_URL = "https://api.mistral.ai/v1/chat/completions"
 
@@ -40,6 +38,14 @@ OCR_VISION_PROMPT = (
 )
 
 
+def normalize_text(text: str) -> str:
+    text = unicodedata.normalize("NFKC", text)
+    # collapse repeated whitespace, keep paragraph breaks
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
 def _ocr_with_mistral_vision(png_bytes: bytes) -> str:
     """Uses Mistral's vision-capable model (Pixtral) to transcribe a scanned
     page. A vision-language model reads the whole page contextually — table
@@ -50,10 +56,13 @@ def _ocr_with_mistral_vision(png_bytes: bytes) -> str:
     if not settings.MISTRAL_API_KEY:
         raise RuntimeError("MISTRAL_API_KEY is not set — add it to your .env")
 
+    from services.mistral_client import post_with_retry_sync
+
     b64_image = base64.b64encode(png_bytes).decode("utf-8")
 
     with httpx.Client(timeout=90) as client:
-        resp = client.post(
+        resp = post_with_retry_sync(
+            client,
             MISTRAL_CHAT_URL,
             headers={"Authorization": f"Bearer {settings.MISTRAL_API_KEY}"},
             json={
@@ -70,12 +79,13 @@ def _ocr_with_mistral_vision(png_bytes: bytes) -> str:
                 "temperature": 0.0,
             },
         )
-        resp.raise_for_status()
         return resp.json()["choices"][0]["message"]["content"]
 
 
 def extract_text_per_page(pdf_bytes: bytes) -> list[dict]:
-    """Returns [{page: int, text: str, method: 'text'|'ocr'}, ...]"""
+    """Returns [{page, text, method, image_bytes?}, ...]. image_bytes is only
+    present for OCR'd pages, kept for a later vision-based entity-extraction
+    pass that reads the table directly from the image."""
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     pages = []
     for i, page in enumerate(doc):
@@ -94,7 +104,7 @@ def extract_text_per_page(pdf_bytes: bytes) -> list[dict]:
             "page": i + 1,
             "text": normalize_text(ocr_text),
             "method": "ocr",
-            "image_bytes": png_bytes,  # kept for direct vision-based entity extraction
+            "image_bytes": png_bytes,
         })
     doc.close()
     return pages
@@ -138,16 +148,3 @@ def parse_pdf(pdf_bytes: bytes) -> dict:
         "used_ocr": used_ocr,
         "num_pages": len(pages),
     }
-
-def render_pages_as_jpg(pdf_bytes: bytes, dpi: int = 150) -> list[bytes]:
-    """Renders each page as a JPG for the report viewer's image preview."""
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    images = []
-    for page in doc:
-        pix = page.get_pixmap(dpi=dpi)
-        img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
-        buf = io.BytesIO()
-        img.save(buf, format="JPEG", quality=85)
-        images.append(buf.getvalue())
-    doc.close()
-    return images
