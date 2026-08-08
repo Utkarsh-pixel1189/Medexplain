@@ -19,8 +19,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Header />
         <main className="flex-1 mx-auto max-w-5xl w-full px-4 py-10">{children}</main>
         <footer className="border-t-2 border-ink/10 mt-16">
-          <div className="mx-auto max-w-5xl px-4 py-6 text-xs font-mono text-inkSoft/70">
-            Medexplain is not medical advice. Always confirm results with a physician.
+          <div className="mx-auto max-w-5xl px-4 py-6">
+            <p className="inline-block text-sm font-medium text-ink bg-highlight/40 px-4 py-2 rounded-full">
+              Medexplain is not medical advice. Always confirm results with a physician.
+            </p>
           </div>
         </footer>
       </body>

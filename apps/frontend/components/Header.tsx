@@ -26,7 +26,7 @@ export default function Header() {
             <circle cx="20" cy="10" r="6" fill="currentColor" />
             <path d="M20 16 C 8 20, 8 34, 20 34 C 32 34, 32 20, 20 16 Z" fill="none" stroke="currentColor" strokeWidth="3" />
           </svg>
-          <span className="font-display font-bold text-xl tracking-tight text-ink">Medexplain</span>
+          <span className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-ink">Medexplain</span>
         </a>
         <nav className="text-sm font-medium text-ink flex items-center gap-8 shrink-0">
           <a href="/dashboard" className="hover:text-sage transition-colors">Dashboard</a>

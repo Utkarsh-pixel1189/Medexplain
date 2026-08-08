@@ -1,17 +1,37 @@
+import Image from "next/image";
 import Marker from "@/components/Marker";
-import SketchDivider from "@/components/SketchDivider";
-import HeroSketch from "@/components/HeroSketch";
 
 const STEPS = [
-  { n: "01", title: "Upload", body: "Drop in a scanned or digital PDF report — lab work, imaging, ECGs, anything." },
-  { n: "02", title: "Understand", body: "We extract the key values and trends, and lay them out clearly." },
-  { n: "03", title: "Ask", body: "Ask follow-up questions in plain language, answered straight from your report." },
+  {
+    n: "01",
+    title: "Upload",
+    body: "Drop in a scanned or digital PDF report — lab work, imaging, ECGs, or anything else your provider hands you.",
+    icon: (
+      <path d="M12 16V4M12 4L7 9M12 4l5 5M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" strokeLinecap="round" strokeLinejoin="round" />
+    ),
+  },
+  {
+    n: "02",
+    title: "Understand",
+    body: "We extract the values that matter, check them against normal ranges, and lay out trends clearly.",
+    icon: (
+      <path d="M4 19V5m5 14V9m5 10V13m5 6V7" strokeLinecap="round" strokeLinejoin="round" />
+    ),
+  },
+  {
+    n: "03",
+    title: "Ask",
+    body: "Ask follow-up questions in plain language — answered directly from your own report, with sources cited.",
+    icon: (
+      <path d="M12 18h.01M8 21h8a2 2 0 002-2V7a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" strokeLinecap="round" strokeLinejoin="round" />
+    ),
+  },
 ];
 
 export default function HomePage() {
   return (
-    <div className="space-y-16">
-      <section className="text-center space-y-8">
+    <div className="space-y-10">
+      <section className="text-center space-y-5">
         <h1 className="font-display font-bold text-4xl sm:text-6xl leading-[1.05] text-ink max-w-3xl mx-auto">
           Unlock <Marker>effortless</Marker> understanding of your medical reports.
         </h1>
@@ -20,26 +40,46 @@ export default function HomePage() {
           values that matter, and answers your follow-up questions directly from
           your own report.
         </p>
-        <div className="flex flex-wrap gap-3 justify-center pt-2">
-          <a href="/login" className="px-6 py-3.5 rounded-full bg-sage text-paper text-sm font-semibold hover:bg-sage-dark transition-colors">
-            Get started with an upload
-          </a>
-          <a href="/dashboard" className="px-6 py-3.5 rounded-full border-2 border-ink text-sm font-semibold text-ink hover:bg-ink hover:text-paper transition-colors">
-            Go to dashboard
-          </a>
-        </div>
       </section>
 
-      <SketchDivider />
-
-      <section className="pt-4">
-        <HeroSketch />
+      <section>
+        <Image
+          src="/hero-illustration.png"
+          alt="How Medexplain works: upload, read, surface values, answer questions"
+          width={1200}
+          height={630}
+          className="w-full max-w-3xl mx-auto"
+          priority
+        />
       </section>
 
-      <section className="grid sm:grid-cols-3 gap-8 pt-8">
+      <section className="flex flex-wrap gap-3 justify-center">
+        <a
+          href="/login"
+          className="px-6 py-3.5 rounded-full bg-sage text-paper text-sm font-semibold transition-all hover:bg-sage-dark hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
+        >
+          Get started with an upload
+        </a>
+        <a
+          href="/dashboard"
+          className="px-6 py-3.5 rounded-full border-2 border-ink text-sm font-semibold text-ink transition-all hover:bg-ink hover:text-paper hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
+        >
+          Go to dashboard
+        </a>
+      </section>
+
+      <section className="grid sm:grid-cols-3 gap-5 pt-6">
         {STEPS.map((step) => (
-          <div key={step.n} className="space-y-2">
-            <span className="font-display font-bold text-2xl text-sage">{step.n}</span>
+          <div
+            key={step.n}
+            className="border-2 border-ink/15 rounded-2xl p-6 space-y-3 bg-paper transition-all hover:-translate-y-1.5 hover:shadow-xl hover:border-sage"
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-display font-bold text-2xl text-sage">{step.n}</span>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-sage">
+                {step.icon}
+              </svg>
+            </div>
             <h3 className="font-display font-bold text-lg text-ink">{step.title}</h3>
             <p className="text-sm text-inkSoft leading-relaxed">{step.body}</p>
           </div>
