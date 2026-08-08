@@ -1,11 +1,13 @@
 """
 Shared helper for calling the Mistral API with automatic retry on rate
-limits (HTTP 429). The pipeline now makes several Mistral calls per upload
-(OCR, entity extraction, embeddings, summary) in quick succession, which can
+limits (HTTP 429). The pipeline makes several Mistral calls per upload (OCR,
+entity extraction, embeddings, summary) in quick succession, which can
 exceed the account's requests-per-second limit — retrying with backoff
 instead of failing outright makes the pipeline resilient to that.
 """
 import asyncio
+import time
+
 import httpx
 
 
@@ -33,3 +35,29 @@ async def post_with_retry(
         delay = min(delay * 2, 30)  # exponential backoff, capped at 30s
 
     raise RuntimeError("unreachable")  # satisfies type checkers
+
+
+def post_with_retry_sync(
+    client: httpx.Client,
+    url: str,
+    *,
+    headers: dict,
+    json: dict,
+    max_retries: int = 5,
+) -> httpx.Response:
+    delay = 2.0
+    for attempt in range(max_retries + 1):
+        resp = client.post(url, headers=headers, json=json)
+        if resp.status_code != 429:
+            resp.raise_for_status()
+            return resp
+
+        if attempt == max_retries:
+            resp.raise_for_status()
+
+        retry_after = resp.headers.get("retry-after")
+        wait = float(retry_after) if retry_after else delay
+        time.sleep(wait)
+        delay = min(delay * 2, 30)
+
+    raise RuntimeError("unreachable")
