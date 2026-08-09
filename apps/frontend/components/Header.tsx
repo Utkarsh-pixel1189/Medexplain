@@ -24,7 +24,7 @@ export default function Header() {
     <header className="border-b-2 border-ink/10 bg-paper sticky top-0 z-20">
       <div className="w-full px-4 sm:px-8 h-20 flex items-center justify-between">
         <a href="/" className="flex items-center gap-2 shrink-0 min-w-0">
-          <Image src="/logo-mark.png" alt="" width={40} height={44} className="shrink-0 h-9 w-auto" priority />
+          <Image src="/logo-mark.png" alt="" width={80} height={88} className="shrink-0 h-14 w-auto" priority />
           <span className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-ink truncate">Medexplain</span>
         </a>
 
