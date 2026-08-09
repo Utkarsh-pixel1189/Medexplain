@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { api, User } from "@/lib/api";
-
 export default function Header() {
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -24,10 +24,7 @@ export default function Header() {
     <header className="border-b-2 border-ink/10 bg-paper sticky top-0 z-20">
       <div className="w-full px-4 sm:px-8 h-20 flex items-center justify-between">
         <a href="/" className="flex items-center gap-2 shrink-0 min-w-0">
-          <svg width="30" height="30" viewBox="0 0 40 40" className="text-sage shrink-0">
-            <circle cx="20" cy="10" r="6" fill="currentColor" />
-            <path d="M20 16 C 8 20, 8 34, 20 34 C 32 34, 32 20, 20 16 Z" fill="none" stroke="currentColor" strokeWidth="3" />
-          </svg>
+          <Image src="/logo-mark.png" alt="" width={40} height={44} className="shrink-0 h-9 w-auto" priority />
           <span className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-ink truncate">Medexplain</span>
         </a>
 
