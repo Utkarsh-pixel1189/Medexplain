@@ -48,7 +48,7 @@ export default function HomePage() {
           alt="How Medexplain works: upload, read, surface values, answer questions"
           width={1200}
           height={630}
-          className="w-full max-w-5xl mx-auto h-auto max-h-[38vh] object-contain"
+          className="w-full h-auto max-h-[46vh] object-contain"
           priority
         />
       </section>
