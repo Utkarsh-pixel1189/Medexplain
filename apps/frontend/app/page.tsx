@@ -42,13 +42,13 @@ export default function HomePage() {
         </p>
       </section>
 
-      <section className="w-full rounded-2xl overflow-hidden">
+      <section className="w-full max-h-[42vh] overflow-hidden rounded-2xl">
         <Image
           src="/hero-illustration.png"
           alt="How Medexplain works: upload, read, surface values, answer questions"
           width={1200}
-          height={630}
-          className="w-full h-auto"
+          height={751}
+          className="w-full h-full object-cover object-top"
           priority
         />
       </section>
