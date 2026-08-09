@@ -42,17 +42,16 @@ export default function HomePage() {
         </p>
       </section>
 
-      <section>
+      <section className="w-full max-h-[46vh] overflow-hidden rounded-2xl">
         <Image
           src="/hero-illustration.png"
           alt="How Medexplain works: upload, read, surface values, answer questions"
           width={1200}
           height={630}
-          className="w-full h-auto max-h-[46vh] object-contain"
+          className="w-full h-full object-cover"
           priority
         />
       </section>
-
       <section className="flex flex-wrap gap-3 justify-center">
         <a
           href="/login"
