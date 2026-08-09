@@ -14,3 +14,38 @@ body {
 ::selection {
   background: #e9e24a;
 }
+
+@keyframes draw-marker {
+  from { stroke-dashoffset: 220; }
+  to { stroke-dashoffset: 0; }
+}
+.animate-draw-marker {
+  stroke-dasharray: 220;
+  animation: draw-marker 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.3s forwards;
+  stroke-dashoffset: 220;
+}
+
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float {
+  animation: float-y 5s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.6s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-draw-marker, .animate-float, .animate-fade-up {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
