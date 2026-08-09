@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Marker from "@/components/Marker";
 import StepCard from "@/components/StepCard";
+import TiltImage from "@/components/TiltImage";
 
 const STEPS = [
   {
@@ -43,18 +43,7 @@ export default function HomePage() {
         </p>
       </section>
 
-      <section className="w-full max-h-[42vh] overflow-hidden rounded-2xl border-2 border-ink">
-        <div className="animate-float">
-          <Image
-            src="/hero-illustration.png"
-            alt="How Medexplain works: upload, read, surface values, answer questions"
-            width={1200}
-            height={751}
-            className="w-full h-full object-cover object-top"
-            priority
-          />
-        </div>
-      </section>
+      <TiltImage />
 
       <section className="flex flex-wrap gap-3 justify-center">
         <a
