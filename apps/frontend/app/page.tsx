@@ -30,12 +30,12 @@ const STEPS = [
 
 export default function HomePage() {
   return (
-    <div className="space-y-6">
-      <section className="text-center space-y-4">
-        <h1 className="font-display font-bold text-4xl sm:text-6xl leading-[1.05] text-ink max-w-5xl mx-auto">
+    <div className="space-y-5">
+      <section className="text-center space-y-3">
+        <h1 className="font-display font-bold text-3xl sm:text-5xl leading-[1.08] text-ink max-w-5xl mx-auto">
           Unlock <Marker>effortless</Marker> understanding of your medical reports.
         </h1>
-        <p className="text-inkSoft max-w-2xl mx-auto leading-relaxed text-lg">
+        <p className="text-inkSoft max-w-2xl mx-auto leading-relaxed text-base">
           Upload a lab or imaging report as a PDF. Medexplain reads it, surfaces the
           values that matter, and answers your follow-up questions directly from
           your own report.
@@ -48,7 +48,7 @@ export default function HomePage() {
           alt="How Medexplain works: upload, read, surface values, answer questions"
           width={1200}
           height={630}
-          className="w-full max-w-5xl mx-auto h-auto"
+          className="w-full max-w-5xl mx-auto h-auto max-h-[38vh] object-contain"
           priority
         />
       </section>
@@ -56,13 +56,13 @@ export default function HomePage() {
       <section className="flex flex-wrap gap-3 justify-center">
         <a
           href="/login"
-          className="px-6 py-3.5 rounded-full bg-accent text-paper text-sm font-semibold transition-all hover:bg-accent-dark hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
+          className="px-6 py-3 rounded-full bg-accent text-paper text-sm font-semibold transition-all hover:bg-accent-dark hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
         >
           Get started with an upload
         </a>
         <a
           href="/dashboard"
-          className="px-6 py-3.5 rounded-full border-2 border-ink text-sm font-semibold text-ink transition-all hover:bg-ink hover:text-paper hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
+          className="px-6 py-3 rounded-full border-2 border-ink text-sm font-semibold text-ink transition-all hover:bg-ink hover:text-paper hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
         >
           Go to dashboard
         </a>
