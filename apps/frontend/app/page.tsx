@@ -43,7 +43,7 @@ export default function HomePage() {
         </p>
       </section>
 
-      <section className="w-full max-h-[42vh] overflow-hidden rounded-2xl">
+      <section className="w-full max-h-[42vh] overflow-hidden rounded-2xl animate-scale-in animate-glow">
         <div className="animate-float">
           <Image
             src="/hero-illustration.png"
@@ -55,6 +55,7 @@ export default function HomePage() {
           />
         </div>
       </section>
+
       <section className="flex flex-wrap gap-3 justify-center">
         <a
           href="/login"
@@ -73,16 +74,22 @@ export default function HomePage() {
       <section className="grid sm:grid-cols-3 gap-5 pt-2">
         {STEPS.map((step, i) => (
           <Reveal key={step.n} delay={i * 120}>
-            <div className="border-2 border-ink/15 rounded-2xl p-6 space-y-3 bg-paper transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:border-sage h-full">
-              <div className="flex items-center justify-between">
-                <span className="font-display font-bold text-2xl text-sage">{step.n}</span>
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-sage">
-                  {step.icon}
-                </svg>
+            {({ active }: { active: boolean }) => (
+              <div
+                className={`border-2 rounded-2xl p-6 space-y-3 bg-paper transition-all duration-300 h-full hover:-translate-y-1.5 hover:shadow-xl hover:border-sage ${
+                  active ? "-translate-y-1.5 shadow-xl border-sage" : "border-ink/15"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-display font-bold text-2xl text-sage">{step.n}</span>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-sage">
+                    {step.icon}
+                  </svg>
+                </div>
+                <h3 className="font-display font-bold text-lg text-ink">{step.title}</h3>
+                <p className="text-sm text-inkSoft leading-relaxed">{step.body}</p>
               </div>
-              <h3 className="font-display font-bold text-lg text-ink">{step.title}</h3>
-              <p className="text-sm text-inkSoft leading-relaxed">{step.body}</p>
-            </div>
+            )}
           </Reveal>
         ))}
       </section>

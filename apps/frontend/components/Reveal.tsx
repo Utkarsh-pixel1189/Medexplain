@@ -6,35 +6,54 @@ export default function Reveal({
   children,
   delay = 0,
   className = "",
+  activeClassName = "",
 }: {
   children: React.ReactNode;
   delay?: number;
   className?: string;
+  /** Extra classes applied while the element is prominently in view — lets
+   * mobile users get a "hovered" feel as they scroll, since real :hover
+   * doesn't exist on touch devices. */
+  activeClassName?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+  const [active, setActive] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const observer = new IntersectionObserver(
+
+    const revealObserver = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
+          setRevealed(true);
+          revealObserver.disconnect();
         }
       },
       { threshold: 0.15 }
     );
-    observer.observe(el);
-    return () => observer.disconnect();
+    revealObserver.observe(el);
+
+    // Re-fires on every enter/exit — used to simulate "hover while scrolling"
+    // on touch devices, where a card is only ever briefly centered.
+    const activeObserver = new IntersectionObserver(
+      ([entry]) => setActive(entry.isIntersecting),
+      { threshold: 0.6 }
+    );
+    activeObserver.observe(el);
+
+    return () => {
+      revealObserver.disconnect();
+      activeObserver.disconnect();
+    };
   }, []);
 
   return (
     <div
       ref={ref}
-      className={`${visible ? "animate-fade-up" : "opacity-0"} ${className}`}
-      style={{ animationDelay: visible ? `${delay}ms` : undefined }}
+      className={`${revealed ? "animate-fade-up" : "opacity-0"} ${active ? activeClassName : ""} ${className}`}
+      style={{ animationDelay: revealed ? `${delay}ms` : undefined }}
     >
       {children}
     </div>
