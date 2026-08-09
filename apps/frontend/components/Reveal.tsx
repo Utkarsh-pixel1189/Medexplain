@@ -2,19 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 
+type RevealState = { active: boolean };
+
 export default function Reveal({
   children,
   delay = 0,
   className = "",
-  activeClassName = "",
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode | ((state: RevealState) => React.ReactNode);
   delay?: number;
   className?: string;
-  /** Extra classes applied while the element is prominently in view — lets
-   * mobile users get a "hovered" feel as they scroll, since real :hover
-   * doesn't exist on touch devices. */
-  activeClassName?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [revealed, setRevealed] = useState(false);
@@ -35,8 +32,6 @@ export default function Reveal({
     );
     revealObserver.observe(el);
 
-    // Re-fires on every enter/exit — used to simulate "hover while scrolling"
-    // on touch devices, where a card is only ever briefly centered.
     const activeObserver = new IntersectionObserver(
       ([entry]) => setActive(entry.isIntersecting),
       { threshold: 0.6 }
@@ -52,10 +47,10 @@ export default function Reveal({
   return (
     <div
       ref={ref}
-      className={`${revealed ? "animate-fade-up" : "opacity-0"} ${active ? activeClassName : ""} ${className}`}
+      className={`${revealed ? "animate-fade-up" : "opacity-0"} ${className}`}
       style={{ animationDelay: revealed ? `${delay}ms` : undefined }}
     >
-      {children}
+      {typeof children === "function" ? children({ active }) : children}
     </div>
   );
 }
