@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Header />
         <main className="flex-1 mx-auto max-w-7xl w-full px-6 sm:px-10 pt-8 pb-4">{children}</main>
         <footer className="border-t-2 border-ink/10 mt-4">
-          <div className="mx-auto max-w-7xl px-6 sm:px-10 py-5">
+          <div className="mx-auto max-w-7xl px-6 sm:px-10 py-5 text-center">
             <p className="inline-block text-sm font-medium text-ink bg-highlight/40 px-4 py-2 rounded-full">
               Medexplain is not medical advice. Always confirm results with a physician.
             </p>
