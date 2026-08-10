@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import Marker from "@/components/Marker";
 
+const PASSWORD_RULES = [
+  { label: "At least 8 characters", test: (pw: string) => pw.length >= 8 },
+  { label: "One uppercase letter", test: (pw: string) => /[A-Z]/.test(pw) },
+  { label: "One number", test: (pw: string) => /[0-9]/.test(pw) },
+  { label: "One special character", test: (pw: string) => /[^A-Za-z0-9]/.test(pw) },
+];
+
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -34,8 +41,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="max-w-md mx-auto space-y-4">
-      <h1 className="font-display font-bold text-3xl text-center text-ink">
+    <div className="max-w-md mx-auto space-y-3">
+      <h1 className="font-display font-bold text-2xl sm:text-3xl text-center text-ink">
         {mode === "login" ? (
           <>Welcome <Marker>back</Marker></>
         ) : (
@@ -43,13 +50,15 @@ export default function LoginPage() {
         )}
       </h1>
 
-      <div className="border-2 border-ink rounded-3xl p-8 bg-paper">
-        <form onSubmit={onSubmit} className="space-y-4">
+      <div className="border-2 border-ink rounded-3xl p-5 sm:p-8 bg-paper">
+        <form onSubmit={onSubmit} className="space-y-3.5" autoComplete="on">
           {mode === "register" && (
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wide text-inkSoft mb-1.5">First name</label>
               <input
                 type="text"
+                name="given-name"
+                autoComplete="given-name"
                 required
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
@@ -61,17 +70,25 @@ export default function LoginPage() {
             <label className="block text-xs font-semibold uppercase tracking-wide text-inkSoft mb-1.5">Email</label>
             <input
               type="email"
+              name="email"
+              autoComplete="email"
+              list="known-emails"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full border-2 border-mist rounded-xl px-4 py-2.5 text-sm focus:border-accent focus:outline-none"
             />
+            {/* Browsers populate this dropdown with emails you've previously
+                typed/saved on this device for this site. */}
+            <datalist id="known-emails" />
           </div>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-inkSoft mb-1.5">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
+                name={mode === "register" ? "new-password" : "current-password"}
+                autoComplete={mode === "register" ? "new-password" : "current-password"}
                 required
                 minLength={8}
                 value={password}
@@ -97,21 +114,31 @@ export default function LoginPage() {
               </button>
             </div>
             {mode === "register" && (
-              <p className="mt-1.5 text-xs text-inkSoft">Must be at least 8 characters.</p>
+              <ul className="mt-2 space-y-0.5">
+                {PASSWORD_RULES.map((rule) => {
+                  const met = rule.test(password);
+                  return (
+                    <li key={rule.label} className={`text-xs flex items-center gap-1.5 ${met ? "text-sage" : "text-inkSoft/70"}`}>
+                      <span>{met ? "✓" : "•"}</span>
+                      {rule.label}
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
           {error && <p className="text-sm text-pulse">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-accent text-paper rounded-full py-3.5 text-sm font-semibold hover:bg-accent-dark transition-colors disabled:opacity-50"
+            className="w-full bg-accent text-paper rounded-full py-3 text-sm font-semibold hover:bg-accent-dark transition-colors disabled:opacity-50"
           >
             {loading ? "Please wait…" : mode === "login" ? "Log in" : "Sign up"}
           </button>
         </form>
         <button
           onClick={() => setMode(mode === "login" ? "register" : "login")}
-          className="mt-5 text-sm text-accent hover:underline w-full text-center"
+          className="mt-4 text-sm text-accent hover:underline w-full text-center"
         >
           {mode === "login" ? "Need an account? Sign up" : "Already have an account? Log in"}
         </button>
