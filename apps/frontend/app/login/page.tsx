@@ -5,10 +5,6 @@ import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import Marker from "@/components/Marker";
 
-const PASSWORD_RULES = [
-  { label: "At least 8 characters", test: (pw: string) => pw.length >= 8 },
-];
-
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -38,7 +34,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="max-w-md mx-auto space-y-5">
+    <div className="max-w-md mx-auto space-y-4">
       <h1 className="font-display font-bold text-3xl text-center text-ink">
         {mode === "login" ? (
           <>Welcome <Marker>back</Marker></>
@@ -101,17 +97,7 @@ export default function LoginPage() {
               </button>
             </div>
             {mode === "register" && (
-              <ul className="mt-1.5 space-y-0.5">
-                {PASSWORD_RULES.map((rule) => {
-                  const met = rule.test(password);
-                  return (
-                    <li key={rule.label} className={`text-xs flex items-center gap-1.5 ${met ? "text-sage" : "text-inkSoft/60"}`}>
-                      <span>{met ? "✓" : "•"}</span>
-                      {rule.label}
-                    </li>
-                  );
-                })}
-              </ul>
+              <p className="mt-1.5 text-xs text-inkSoft">Must be at least 8 characters.</p>
             )}
           </div>
           {error && <p className="text-sm text-pulse">{error}</p>}
