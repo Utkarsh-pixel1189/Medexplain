@@ -31,7 +31,7 @@ export default function UploadForm({ onUploaded }: { onUploaded: () => void }) {
   }
 
   return (
-    <div className="border-2 border-dashed border-ink/25 rounded-2xl p-8 text-center bg-sage-light/30 hover:border-sage hover:bg-sage-light/50 transition-all">
+    <div>
       <input
         ref={inputRef}
         type="file"
@@ -43,14 +43,14 @@ export default function UploadForm({ onUploaded }: { onUploaded: () => void }) {
           if (file) handleFile(file);
         }}
       />
-      <label htmlFor="report-upload" className="cursor-pointer flex flex-col items-center gap-2">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-sage">
-          <path d="M12 16V4M12 4L7 9M12 4l5 5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" strokeLinecap="round" strokeLinejoin="round" />
+      <label
+        htmlFor="report-upload"
+        className="flex items-center justify-center gap-2 cursor-pointer border-2 border-dashed border-ink/25 rounded-full py-2.5 px-5 bg-sage-light/30 hover:border-sage hover:bg-sage-light/50 transition-all text-sm font-medium text-sage w-full sm:w-auto"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M12 16V4M12 4L7 9M12 4l5 5M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <span className="text-sm font-medium text-sage">
-          {status === "uploading" ? "Uploading…" : "Click to upload a PDF report"}
-        </span>
+        {status === "uploading" ? "Uploading…" : "Upload a PDF report"}
       </label>
       {errorMsg && <p className="mt-2 text-sm text-pulse">{errorMsg}</p>}
     </div>
