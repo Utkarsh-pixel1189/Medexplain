@@ -10,7 +10,7 @@ export default function StatCard({
   accentColor?: string;
 }) {
   return (
-    <div className="border-2 border-ink/15 rounded-xl p-3 bg-paper shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg hover:border-sage">
+    <div className="border-2 border-ink/15 rounded-xl p-3 bg-paper shadow-sm">
       <div className="flex items-center gap-2.5">
         <div className={`shrink-0 w-7 h-7 rounded-full bg-sage-light flex items-center justify-center ${accentColor}`}>
           {icon}

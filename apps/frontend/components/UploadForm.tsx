@@ -45,7 +45,7 @@ export default function UploadForm({ onUploaded }: { onUploaded: () => void }) {
       />
       <label
         htmlFor="report-upload"
-        className="flex items-center justify-center gap-2 cursor-pointer border-2 border-dashed border-ink/25 rounded-full py-2.5 px-5 bg-sage-light/30 hover:border-sage hover:bg-sage-light/50 transition-all text-sm font-medium text-sage w-full sm:w-auto"
+        className="flex items-center justify-center gap-2 cursor-pointer rounded-full py-2.5 px-5 bg-accent hover:bg-accent-dark transition-colors text-sm font-medium text-paper w-full sm:w-auto"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
           <path d="M12 16V4M12 4L7 9M12 4l5 5M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" strokeLinecap="round" strokeLinejoin="round" />
