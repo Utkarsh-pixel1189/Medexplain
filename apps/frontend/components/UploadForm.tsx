@@ -31,7 +31,7 @@ export default function UploadForm({ onUploaded }: { onUploaded: () => void }) {
   }
 
   return (
-    <div className="border-2 border-dashed border-ink/30 rounded-3xl p-10 text-center bg-highlight/10 hover:border-sage transition-colors">
+    <div className="border-2 border-dashed border-ink/25 rounded-2xl p-8 text-center bg-sage-light/30 hover:border-sage hover:bg-sage-light/50 transition-all">
       <input
         ref={inputRef}
         type="file"
