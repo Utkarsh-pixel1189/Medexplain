@@ -20,6 +20,10 @@ function FileIcon() {
   );
 }
 
+function stripPdfExtension(filename: string): string {
+  return filename.replace(/\.pdf$/i, "");
+}
+
 export default function ReportList({
   reports,
   onDelete,
@@ -35,14 +39,15 @@ export default function ReportList({
 
   function startRename(r: Report) {
     setRenamingId(r.id);
-    setNameDraft(r.original_filename);
+    setNameDraft(stripPdfExtension(r.original_filename));
   }
 
   async function saveRename(id: string) {
-    if (!nameDraft.trim()) return;
+    const trimmed = nameDraft.trim();
+    if (!trimmed) return;
     setSaving(true);
     try {
-      await api.renameReport(id, nameDraft.trim());
+      await api.renameReport(id, `${stripPdfExtension(trimmed)}.pdf`);
       setRenamingId(null);
       onRenamed();
     } catch (err) {
@@ -83,7 +88,7 @@ export default function ReportList({
                   />
                 ) : (
                   <a href={`/report/${r.id}`} className="block transition-transform duration-150 active:scale-[0.97]">
-                    <p className="text-sm font-medium text-ink truncate max-w-full">{r.original_filename}</p>
+                    <p className="text-sm font-medium text-ink truncate max-w-full">{stripPdfExtension(r.original_filename)}</p>
                     <p className="text-xs text-inkSoft mt-0.5">
                       {new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
                     </p>
