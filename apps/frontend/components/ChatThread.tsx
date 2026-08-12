@@ -56,11 +56,11 @@ export default function ChatThread({
           <div key={i} className="space-y-1">
             <p className="text-sm font-medium text-ink">{m.question}</p>
             {m.answer && (
-              <div className="text-sm text-inkSoft bg-sage-light/40 rounded-xl p-3 space-y-2">
+              <div className="text-sm text-ink bg-accent/10 rounded-xl p-3 space-y-2 border border-accent/20">
                 <p className="whitespace-pre-line">{m.answer}</p>
                 {m.sources && m.sources.length > 0 && (
-                  <div className="text-xs text-inkSoft/80 space-y-1 mt-2 font-mono">
-                    <p className="font-medium text-sage-dark">Sources</p>
+                  <div className="text-xs text-inkSoft space-y-1 mt-2">
+                    <p className="font-bold text-accent">Sources</p>
                     {m.sources.map((s, j) => (
                       <p key={j}>
                         [source {j + 1}] (p.{s.page ?? "?"}): {s.snippet}

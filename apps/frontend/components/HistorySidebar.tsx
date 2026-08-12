@@ -54,7 +54,7 @@ export default function HistorySidebar({
   return (
     <div className="hidden lg:flex flex-col border-r-2 border-ink/10 bg-paper w-64 shrink-0">
       <div className="flex items-center justify-between px-4 py-3 border-b-2 border-ink/10">
-        <span className="font-mono text-xs uppercase tracking-widest text-sage">History</span>
+        <span className="text-xs font-bold uppercase tracking-widest text-sage">History</span>
         <button
           onClick={onToggleCollapse}
           className="p-1.5 rounded-full hover:bg-sage-light transition-colors text-ink"

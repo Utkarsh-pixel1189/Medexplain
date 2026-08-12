@@ -139,7 +139,7 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
   );
 
   return (
-    <div className="fixed inset-x-0 top-16 bottom-0 bg-paper">
+    <div className="fixed inset-x-0 top-14 bottom-0 bg-paper">
       <div className="h-full flex flex-col lg:flex-row">
         {/* Desktop sidebar */}
         <HistorySidebar
@@ -159,9 +159,17 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
         />
 
         <div className="flex-1 flex flex-col min-h-0 min-w-0">
-          <div className="flex items-center justify-between flex-wrap gap-2 px-4 sm:px-5 py-3 border-b-2 border-ink/10 shrink-0">
-            <h1 className="font-display font-bold text-base sm:text-lg text-ink truncate">{report.original_filename}</h1>
-            <span className={`text-xs font-mono px-2 py-1 rounded-full shrink-0 ${STATUS_STYLES[report.status]}`}>
+          <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b-2 border-ink/10 shrink-0 bg-sage-light/20">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-full bg-sage-light flex items-center justify-center text-sage shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M14 2v6h6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <h1 className="font-display font-bold text-base sm:text-lg text-ink truncate">{report.original_filename}</h1>
+            </div>
+            <span className={`text-xs font-semibold px-3 py-1.5 rounded-full shrink-0 ${STATUS_STYLES[report.status]}`}>
               {report.status}
             </span>
           </div>
@@ -183,6 +191,21 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
                 onNewMessage={handleNewMessage}
               />
             )}
+          </div>
+
+          {/* Mobile tabs — moved to top, same position as desktop */}
+          <div className="lg:hidden shrink-0 border-b-2 border-ink/10 bg-paper flex">
+            {MOBILE_TABS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setMobileTab(t.id)}
+                className={`flex-1 py-3 text-xs font-medium transition-colors ${
+                  mobileTab === t.id ? "text-accent border-b-2 border-accent" : "text-inkSoft"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
 
           {/* Mobile view */}
@@ -234,21 +257,6 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Mobile bottom tab bar */}
-          <div className="lg:hidden shrink-0 border-t-2 border-ink/10 bg-paper flex">
-            {MOBILE_TABS.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setMobileTab(t.id)}
-                className={`flex-1 py-3 text-xs font-medium transition-colors ${
-                  mobileTab === t.id ? "text-accent" : "text-inkSoft"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
           </div>
         </div>
       </div>

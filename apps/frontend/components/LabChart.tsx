@@ -26,12 +26,12 @@ function RangeBar({ name, value, unit, refRange, flagged, originalValue }: {
   const range = parseRange(refRange);
 
   const NameLabel = () => (
-    <p className="text-sm font-medium text-ink flex items-center gap-1.5">
+    <p className="text-sm font-semibold text-ink flex items-center gap-1.5">
       {name}
       {flagged && (
         <span
           title={originalValue ? `Auto-corrected from "${originalValue}" — verify against the original report` : "Extracted value couldn't be confidently verified — check the original report"}
-          className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 cursor-help"
+          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 cursor-help"
         >
           {originalValue ? "corrected" : "verify"}
         </span>
@@ -44,9 +44,9 @@ function RangeBar({ name, value, unit, refRange, flagged, originalValue }: {
       <div className="py-2.5">
         <div className="flex items-baseline justify-between gap-2">
           <NameLabel />
-          <p className="text-sm font-mono text-inkSoft shrink-0">{value} {unit || ""}</p>
+          <p className="text-sm font-semibold text-ink shrink-0">{value} {unit || ""}</p>
         </div>
-        <p className="text-xs text-inkSoft/60 font-mono mt-1">No reference range stated</p>
+        <p className="text-xs text-inkSoft mt-1">No reference range stated</p>
       </div>
     );
   }
@@ -69,21 +69,21 @@ function RangeBar({ name, value, unit, refRange, flagged, originalValue }: {
     <div className="py-2.5">
       <div className="flex items-baseline justify-between gap-2">
         <NameLabel />
-        <p className={`text-sm font-mono shrink-0 ${isOutOfRange ? "text-pulse" : "text-sage-dark"}`}>
+        <p className={`text-sm font-bold shrink-0 ${isOutOfRange ? "text-pulse" : "text-sage-dark"}`}>
           {value} {unit || ""}
         </p>
       </div>
-      <div className="relative h-2 mt-2 rounded-full bg-mist/50">
+      <div className="relative h-2.5 mt-2 rounded-full bg-mist">
         <div
-          className="absolute h-full bg-sage-light rounded-full"
+          className="absolute h-full bg-sage/40 rounded-full"
           style={{ left: `${rangeStartPct}%`, width: `${rangeWidthPct}%` }}
         />
         <div
-          className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-paper ${isOutOfRange ? "bg-pulse" : "bg-sage"}`}
-          style={{ left: `calc(${valuePct}% - 6px)` }}
+          className={`absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border-2 border-paper shadow-sm ${isOutOfRange ? "bg-pulse" : "bg-sage"}`}
+          style={{ left: `calc(${valuePct}% - 7px)` }}
         />
       </div>
-      <div className="flex justify-between text-[10px] font-mono text-inkSoft/60 mt-1">
+      <div className="flex justify-between text-[10px] font-medium text-inkSoft mt-1">
         <span>{low}</span>
         <span>normal range</span>
         <span>{high}</span>
@@ -95,8 +95,8 @@ function RangeBar({ name, value, unit, refRange, flagged, originalValue }: {
 function PlainRow({ name, value, unit }: { name: string; value: string | null; unit?: string | null }) {
   return (
     <div className="flex items-center justify-between py-2.5 gap-3">
-      <p className="text-sm font-medium text-ink truncate">{name}</p>
-      {value && <p className="text-sm font-mono text-inkSoft shrink-0">{value} {unit || ""}</p>}
+      <p className="text-sm font-semibold text-ink truncate">{name}</p>
+      {value && <p className="text-sm font-semibold text-ink shrink-0">{value} {unit || ""}</p>}
     </div>
   );
 }
@@ -104,17 +104,17 @@ function PlainRow({ name, value, unit }: { name: string; value: string | null; u
 function TrendLine({ name, unit, data }: { name: string; unit: string | null; data: { date: string; value: number | null }[] }) {
   return (
     <div className="py-3">
-      <h3 className="text-sm font-medium text-ink mb-2">
-        {name} {unit ? <span className="font-mono text-inkSoft">({unit})</span> : ""}
+      <h3 className="text-sm font-semibold text-ink mb-2">
+        {name} {unit ? <span className="text-inkSoft">({unit})</span> : ""}
       </h3>
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="#DCD5C2" />
-            <XAxis dataKey="date" fontSize={11} stroke="#47594C" />
-            <YAxis fontSize={11} stroke="#47594C" />
-            <Tooltip contentStyle={{ borderRadius: 8, borderColor: "#DCD5C2", fontFamily: "var(--font-body)" }} />
-            <Line type="monotone" dataKey="value" stroke="#C1502E" strokeWidth={2} dot />
+            <XAxis dataKey="date" fontSize={11} stroke="#47594C" style={{ fontFamily: "var(--font-body)" }} />
+            <YAxis fontSize={11} stroke="#47594C" style={{ fontFamily: "var(--font-body)" }} />
+            <Tooltip contentStyle={{ borderRadius: 8, borderColor: "#1D74F2", fontFamily: "var(--font-body)" }} />
+            <Line type="monotone" dataKey="value" stroke="#1D74F2" strokeWidth={2.5} dot />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -124,7 +124,7 @@ function TrendLine({ name, unit, data }: { name: string; unit: string | null; da
 
 export default function LabChart({ entities }: { entities: Entity[] }) {
   if (entities.length === 0) {
-    return <p className="text-sm text-inkSoft font-mono">No data extracted from this report yet.</p>;
+    return <p className="text-sm text-inkSoft">No data extracted from this report yet.</p>;
   }
 
   const byType = new Map<string, Entity[]>();
@@ -146,10 +146,10 @@ export default function LabChart({ entities }: { entities: Entity[] }) {
 
         return (
           <div key={type}>
-            <h3 className="font-mono text-xs uppercase tracking-widest text-sage mb-3">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-sage mb-3">
               {TYPE_LABELS[type] || type}
             </h3>
-            <div className="divide-y divide-mist/60">
+            <div className="divide-y divide-ink/10">
               {Array.from(byName.entries()).map(([name, points], idx) => {
                 if (points.length > 1) {
                   const data = points
