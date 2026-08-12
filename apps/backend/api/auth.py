@@ -39,7 +39,7 @@ def _issue_session(response: Response, db: DBSession, user: User, request: Reque
         value=token,
         httponly=True,
         secure=settings.COOKIE_SECURE,
-        samesite="none",
+        samesite="lax",
         max_age=settings.SESSION_TTL_MINUTES * 60,
     )
 
