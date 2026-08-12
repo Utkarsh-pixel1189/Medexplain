@@ -123,7 +123,7 @@ export default function DashboardPage() {
       {loading ? (
         <p className="text-sm text-inkSoft font-mono">Loading…</p>
       ) : (
-        <ReportList reports={reports} onDelete={handleDelete} />
+        <ReportList reports={reports} onDelete={handleDelete} onRenamed={refresh} />
       )}
     </div>
   );

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session as DBSession
 
 from core.db import get_db
 from models.models import Report, ReportEntity, ReportChunk, User, AuditLog, Embedding, QAHistory
-from schemas.schemas import ReportOut, EntityOut, ChunkOut
+from schemas.schemas import ReportOut, EntityOut, ChunkOut, RenameReportRequest
 from services.storage import presign_get, delete_object
 from api.deps import get_current_user
 
@@ -56,6 +56,15 @@ def get_chunks(report_id: str, db: DBSession = Depends(get_db), user: User = Dep
         .order_by(ReportChunk.chunk_index)
         .all()
     )
+
+@router.patch("/{report_id}", response_model=ReportOut)
+def rename_report(report_id: str, payload: RenameReportRequest, db: DBSession = Depends(get_db),
+                   user: User = Depends(get_current_user)):
+    report = _get_owned_report(report_id, db, user)
+    report.original_filename = payload.original_filename
+    db.commit()
+    db.refresh(report)
+    return report
 
 
 @router.delete("/{report_id}", status_code=status.HTTP_204_NO_CONTENT)

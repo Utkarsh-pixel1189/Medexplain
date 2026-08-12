@@ -105,3 +105,6 @@ class QAHistoryItem(BaseModel):
     answer: str
     sources: list[QASource]
     created_at: datetime    
+
+class RenameReportRequest(BaseModel):
+    original_filename: str = Field(min_length=1, max_length=500)    

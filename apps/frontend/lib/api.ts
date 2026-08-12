@@ -90,6 +90,8 @@ export const api = {
   getPdfUrl: (id: string) => request<{ url: string }>(`/report/${id}/pdf`),
   getPages: (id: string) => request<{ pages: string[] }>(`/report/${id}/pages`),
   deleteReport: (id: string) => request<void>(`/report/${id}`, { method: "DELETE" }),
+  renameReport: (id: string, filename: string) =>
+    request<Report>(`/report/${id}`, { method: "PATCH", body: JSON.stringify({ original_filename: filename }) }),
   presign: (filename: string, contentType: string) =>
     request<{ upload_url: string; s3_key: string }>(
       `/s3-presign?filename=${encodeURIComponent(filename)}&content_type=${encodeURIComponent(contentType)}`
