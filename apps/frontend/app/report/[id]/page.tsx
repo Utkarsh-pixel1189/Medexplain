@@ -5,8 +5,9 @@ import { api, Report, Entity, QASource } from "@/lib/api";
 import SummaryCard from "@/components/SummaryCard";
 import LabChart from "@/components/LabChart";
 import PdfPreview from "@/components/PdfPreview";
-import HistoryList from "@/components/HistoryList";
+import HistorySidebar from "@/components/HistorySidebar";
 import ChatThread from "@/components/ChatThread";
+import ReportTabs, { TabId } from "@/components/ReportTabs";
 
 type Message = { question: string; answer?: string; sources?: QASource[] };
 type Thread = { threadId: string; label: string; messages: Message[] };
@@ -17,11 +18,19 @@ function truncate(text: string, max: number) {
 
 const STATUS_STYLES: Record<string, string> = {
   uploaded: "bg-mist/60 text-inkSoft",
-  scanning: "bg-amber-100 text-amber-800",
-  parsing: "bg-amber-100 text-amber-800",
+  scanning: "bg-highlight/40 text-ink",
+  parsing: "bg-highlight/40 text-ink",
   parsed: "bg-sage-light text-sage-dark",
   failed: "bg-pulse/10 text-pulse",
 };
+
+const MOBILE_TABS = [
+  { id: "document", label: "Doc" },
+  { id: "report", label: "Report" },
+  { id: "chat", label: "Chat" },
+  { id: "history", label: "History" },
+] as const;
+type MobileTabId = (typeof MOBILE_TABS)[number]["id"];
 
 export default function ReportViewerPage({ params }: { params: { id: string } }) {
   const [report, setReport] = useState<Report | null>(null);
@@ -30,6 +39,9 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
   const [threads, setThreads] = useState<Thread[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<TabId>("document");
+  const [mobileTab, setMobileTab] = useState<MobileTabId>("document");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,7 +110,7 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
     return (
       <div className="space-y-4 px-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h1 className="font-display text-xl text-ink">{report.original_filename}</h1>
+          <h1 className="font-display font-bold text-xl text-ink">{report.original_filename}</h1>
           <span className={`text-xs font-mono px-2 py-1 rounded-full ${STATUS_STYLES[report.status] || "bg-mist/60 text-inkSoft"}`}>
             {report.status}
           </span>
@@ -114,45 +126,130 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
     );
   }
 
+  const reportTabContent = (
+    <div className="h-full overflow-y-auto p-5 space-y-6">
+      {report.ai_summary && <SummaryCard summary={report.ai_summary} />}
+      {entities.length > 0 && (
+        <div>
+          <h2 className="font-mono text-xs uppercase tracking-widest text-sage mb-3">Report details</h2>
+          <LabChart entities={entities} />
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="fixed inset-x-0 top-16 bottom-0 bg-paper">
-      <div className="h-full flex flex-col overflow-y-auto lg:overflow-hidden px-4 sm:px-6 lg:px-8 py-3">
-        <div className="flex items-center justify-between flex-wrap gap-2 shrink-0 pb-3">
-          <h1 className="font-display text-lg text-ink truncate">{report.original_filename}</h1>
-          <span className={`text-xs font-mono px-2 py-1 rounded-full shrink-0 ${STATUS_STYLES[report.status]}`}>
-            {report.status}
-          </span>
-        </div>
+      <div className="h-full flex flex-col lg:flex-row">
+        {/* Desktop sidebar */}
+        <HistorySidebar
+          threads={threads}
+          selectedThreadId={selectedThreadId}
+          onSelect={(id) => {
+            setSelectedThreadId(id);
+            setTab("chat");
+          }}
+          onNewChat={() => {
+            setSelectedThreadId(null);
+            setTab("chat");
+          }}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+          disabled={!isReady}
+        />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr_1fr] gap-4 flex-1 min-h-0">
-          <div className="grid grid-rows-[1fr_auto] gap-4 min-h-0 h-full">
-            <PdfPreview pages={pages} />
-            <HistoryList
-              threads={threads}
-              selectedThreadId={selectedThreadId}
-              onSelect={setSelectedThreadId}
-              disabled={!isReady}
-            />
+        <div className="flex-1 flex flex-col min-h-0 min-w-0">
+          <div className="flex items-center justify-between flex-wrap gap-2 px-4 sm:px-5 py-3 border-b-2 border-ink/10 shrink-0">
+            <h1 className="font-display font-bold text-base sm:text-lg text-ink truncate">{report.original_filename}</h1>
+            <span className={`text-xs font-mono px-2 py-1 rounded-full shrink-0 ${STATUS_STYLES[report.status]}`}>
+              {report.status}
+            </span>
           </div>
 
-          <div className="border border-mist rounded-2xl bg-paper overflow-y-auto p-5 space-y-6 min-h-0">
-            {report.ai_summary && <SummaryCard summary={report.ai_summary} />}
-            {entities.length > 0 && (
-              <div>
-                <h2 className="font-mono text-xs uppercase tracking-widest text-sage mb-3">Report details</h2>
-                <LabChart entities={entities} />
+          {/* Desktop tabs */}
+          <div className="hidden lg:block shrink-0">
+            <ReportTabs active={tab} onChange={setTab} />
+          </div>
+
+          <div className="flex-1 min-h-0 hidden lg:block">
+            {tab === "document" && <PdfPreview pages={pages} />}
+            {tab === "report" && reportTabContent}
+            {tab === "chat" && (
+              <ChatThread
+                reportId={report.id}
+                threadId={selectedThreadId}
+                messages={selectedThread?.messages || []}
+                disabled={!isReady}
+                onNewMessage={handleNewMessage}
+              />
+            )}
+          </div>
+
+          {/* Mobile view */}
+          <div className="flex-1 min-h-0 lg:hidden">
+            {mobileTab === "document" && <PdfPreview pages={pages} />}
+            {mobileTab === "report" && reportTabContent}
+            {mobileTab === "chat" && (
+              <ChatThread
+                reportId={report.id}
+                threadId={selectedThreadId}
+                messages={selectedThread?.messages || []}
+                disabled={!isReady}
+                onNewMessage={handleNewMessage}
+              />
+            )}
+            {mobileTab === "history" && (
+              <div className="h-full overflow-y-auto p-3">
+                <button
+                  onClick={() => {
+                    setSelectedThreadId(null);
+                    setMobileTab("chat");
+                  }}
+                  disabled={!isReady}
+                  className="w-full flex items-center justify-center gap-2 text-sm font-medium px-3 py-2.5 rounded-full bg-accent text-paper hover:bg-accent-dark transition-colors disabled:opacity-50 mb-3"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  New chat
+                </button>
+                {threads.length === 0 && (
+                  <p className="text-xs text-inkSoft font-mono px-2 py-4 text-center">No history yet</p>
+                )}
+                <div className="space-y-1">
+                  {threads.map((t) => (
+                    <button
+                      key={t.threadId}
+                      onClick={() => {
+                        setSelectedThreadId(t.threadId);
+                        setMobileTab("chat");
+                      }}
+                      className={`w-full text-left text-sm px-3 py-2.5 rounded-xl truncate transition-colors ${
+                        selectedThreadId === t.threadId ? "bg-sage-light text-sage-dark font-medium" : "text-ink hover:bg-sage-light/30"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
 
-          <ChatThread
-            reportId={report.id}
-            threadId={selectedThreadId}
-            messages={selectedThread?.messages || []}
-            disabled={!isReady}
-            onNewMessage={handleNewMessage}
-            onNewChat={() => setSelectedThreadId(null)}
-          />
+          {/* Mobile bottom tab bar */}
+          <div className="lg:hidden shrink-0 border-t-2 border-ink/10 bg-paper flex">
+            {MOBILE_TABS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setMobileTab(t.id)}
+                className={`flex-1 py-3 text-xs font-medium transition-colors ${
+                  mobileTab === t.id ? "text-accent" : "text-inkSoft"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
