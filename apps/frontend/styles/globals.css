@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-paper text-ink font-body antialiased;
+html, body {
+  @apply bg-paper text-ink font-body antialiased overflow-x-hidden;
 }
 
 :focus-visible {

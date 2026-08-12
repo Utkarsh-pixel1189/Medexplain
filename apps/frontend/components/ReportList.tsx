@@ -39,12 +39,12 @@ export default function ReportList({
       {reports.map((r) => (
         <li key={r.id}>
           <div className="rounded-2xl border-2 border-ink/15 bg-paper shadow-sm px-4 py-4 sm:px-5">
-            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 overflow-hidden">
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-sage-light flex items-center justify-center text-sage shrink-0">
                 <FileIcon />
               </div>
-              <a href={`/report/${r.id}`} className="flex-1 min-w-0 transition-transform duration-150 active:scale-[0.97]">
-                <p className="text-sm font-medium text-ink truncate">{r.original_filename}</p>
+              <a href={`/report/${r.id}`} className="flex-1 min-w-0 overflow-hidden transition-transform duration-150 active:scale-[0.97]">
+                <p className="text-sm font-medium text-ink truncate max-w-full">{r.original_filename}</p>
                 <p className="text-xs text-inkSoft mt-0.5">
                   {new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
                 </p>
