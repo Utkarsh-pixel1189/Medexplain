@@ -20,6 +20,13 @@ export default function Header() {
     router.push("/login");
   }
 
+  async function handleSwitchAccount() {
+    await api.logout();
+    setUser(null);
+    setMenuOpen(false);
+    router.push("/login");
+  }
+
   return (
     <header className="border-b-2 border-ink/10 bg-paper sticky top-0 z-20">
       <div className="w-full px-4 sm:px-8 h-20 flex items-center justify-between">
@@ -34,6 +41,12 @@ export default function Header() {
           {user ? (
             <div className="flex items-center gap-3">
               <span className="whitespace-nowrap">Hi, {user.first_name || user.email}</span>
+              <button
+                onClick={handleSwitchAccount}
+                className="text-xs text-accent hover:underline whitespace-nowrap"
+              >
+                Switch account
+              </button>
               <button
                 onClick={handleLogout}
                 className="text-xs px-4 py-2 rounded-full border-2 border-ink hover:bg-ink hover:text-paper transition-colors whitespace-nowrap"
@@ -87,6 +100,12 @@ export default function Header() {
                 className="w-full text-sm px-4 py-2.5 rounded-full border-2 border-ink hover:bg-ink hover:text-paper transition-colors"
               >
                 Log out
+              </button>
+              <button
+                onClick={handleSwitchAccount}
+                className="w-full text-sm px-4 py-2.5 rounded-full text-accent hover:underline"
+              >
+                Log in with another account
               </button>
             </>
           ) : (
