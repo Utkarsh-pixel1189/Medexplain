@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, Report, Entity, QASource } from "@/lib/api";
 import SummaryCard from "@/components/SummaryCard";
 import LabChart from "@/components/LabChart";
@@ -25,12 +25,13 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const MOBILE_TABS = [
-  { id: "document", label: "Doc" },
-  { id: "report", label: "Report" },
+  { id: "document", label: "Document" },
+  { id: "report", label: "Summary" },
   { id: "chat", label: "Chat" },
   { id: "history", label: "History" },
 ] as const;
 type MobileTabId = (typeof MOBILE_TABS)[number]["id"];
+const MOBILE_TAB_ORDER: MobileTabId[] = ["document", "report", "chat", "history"];
 
 export default function ReportViewerPage({ params }: { params: { id: string } }) {
   const [report, setReport] = useState<Report | null>(null);
@@ -42,6 +43,32 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
   const [tab, setTab] = useState<TabId>("document");
   const [mobileTab, setMobileTab] = useState<MobileTabId>("document");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+
+    // Ignore mostly-vertical swipes (scrolling) and short swipes.
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return;
+
+    const currentIndex = MOBILE_TAB_ORDER.indexOf(mobileTab);
+    if (dx < 0 && currentIndex < MOBILE_TAB_ORDER.length - 1) {
+      setMobileTab(MOBILE_TAB_ORDER[currentIndex + 1]);
+    } else if (dx > 0 && currentIndex > 0) {
+      setMobileTab(MOBILE_TAB_ORDER[currentIndex - 1]);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -127,11 +154,11 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
   }
 
   const reportTabContent = (
-    <div className="h-full overflow-y-auto p-5 space-y-6">
+    <div className="h-full overflow-y-auto p-5">
       {report.ai_summary && <SummaryCard summary={report.ai_summary} />}
       {entities.length > 0 && (
-        <div>
-          <h2 className="font-mono text-xs uppercase tracking-widest text-sage mb-3">Report details</h2>
+        <div className="mt-6 border-t-2 border-ink/10 pt-5">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-sage mb-3">Report details</h2>
           <LabChart entities={entities} />
         </div>
       )}
@@ -193,7 +220,7 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
             )}
           </div>
 
-          {/* Mobile tabs — moved to top, same position as desktop */}
+          {/* Mobile tabs — top, matching desktop placement */}
           <div className="lg:hidden shrink-0 border-b-2 border-ink/10 bg-paper flex">
             {MOBILE_TABS.map((t) => (
               <button
@@ -208,8 +235,12 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
             ))}
           </div>
 
-          {/* Mobile view */}
-          <div className="flex-1 min-h-0 lg:hidden">
+          {/* Mobile view — swipeable */}
+          <div
+            className="flex-1 min-h-0 lg:hidden"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             {mobileTab === "document" && <PdfPreview pages={pages} />}
             {mobileTab === "report" && reportTabContent}
             {mobileTab === "chat" && (
@@ -222,36 +253,46 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
               />
             )}
             {mobileTab === "history" && (
-              <div className="h-full overflow-y-auto p-3">
-                <button
-                  onClick={() => {
-                    setSelectedThreadId(null);
-                    setMobileTab("chat");
-                  }}
-                  disabled={!isReady}
-                  className="w-full flex items-center justify-center gap-2 text-sm font-medium px-3 py-2.5 rounded-full bg-accent text-paper hover:bg-accent-dark transition-colors disabled:opacity-50 mb-3"
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  New chat
-                </button>
+              <div className="h-full overflow-y-auto">
+                <div className="p-3">
+                  <button
+                    onClick={() => {
+                      setSelectedThreadId(null);
+                      setMobileTab("chat");
+                    }}
+                    disabled={!isReady}
+                    className="w-full flex items-center justify-center gap-2 text-sm font-medium px-3 py-2.5 rounded-full bg-accent text-paper hover:bg-accent-dark transition-colors disabled:opacity-50"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    New chat
+                  </button>
+                </div>
                 {threads.length === 0 && (
-                  <p className="text-xs text-inkSoft font-mono px-2 py-4 text-center">No history yet</p>
+                  <p className="text-xs text-inkSoft px-4 py-6 text-center">No history yet</p>
                 )}
-                <div className="space-y-1">
-                  {threads.map((t) => (
+                <div>
+                  {threads.map((t, idx) => (
                     <button
                       key={t.threadId}
                       onClick={() => {
                         setSelectedThreadId(t.threadId);
                         setMobileTab("chat");
                       }}
-                      className={`w-full text-left text-sm px-3 py-2.5 rounded-xl truncate transition-colors ${
-                        selectedThreadId === t.threadId ? "bg-sage-light text-sage-dark font-medium" : "text-ink hover:bg-sage-light/30"
+                      className={`w-full text-left px-4 py-3 border-b border-ink/10 relative ${
+                        selectedThreadId === t.threadId ? "bg-sage-light/40" : ""
                       }`}
                     >
-                      {t.label}
+                      {selectedThreadId === t.threadId && (
+                        <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
+                      )}
+                      <p className="text-[10px] font-bold text-inkSoft uppercase tracking-wide mb-0.5">
+                        Thread {idx + 1}
+                      </p>
+                      <p className={`text-sm truncate ${selectedThreadId === t.threadId ? "font-semibold text-ink" : "text-ink"}`}>
+                        {t.label}
+                      </p>
                     </button>
                   ))}
                 </div>

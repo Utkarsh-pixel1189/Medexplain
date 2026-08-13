@@ -33,14 +33,14 @@ export default function SummaryCard({ summary }: { summary: AISummary }) {
   const normal = summary.insights.filter((i) => i.status === "normal");
 
   return (
-    <div className="border-2 border-ink/15 rounded-2xl bg-paper p-5 space-y-5 shadow-sm">
+    <div className="space-y-6">
       <div>
         <h2 className="text-xs font-bold uppercase tracking-widest text-sage mb-2">Summary</h2>
         <p className="text-sm text-ink leading-relaxed">{summary.overview}</p>
       </div>
 
       {attention.length > 0 ? (
-        <div className="space-y-1">
+        <div className="space-y-1 border-t-2 border-ink/10 pt-4">
           <h3 className="text-xs font-bold uppercase tracking-widest text-inkSoft">Worth a second look</h3>
           <div className="divide-y divide-ink/10">
             {attention.map((i, idx) => (
@@ -50,14 +50,14 @@ export default function SummaryCard({ summary }: { summary: AISummary }) {
         </div>
       ) : (
         summary.insights.length > 0 && (
-          <p className="text-sm font-semibold text-sage-dark bg-sage-light/50 rounded-lg px-3 py-2">
+          <p className="text-sm font-semibold text-sage-dark border-t-2 border-ink/10 pt-4">
             All extracted values fall within their stated normal ranges.
           </p>
         )
       )}
 
       {normal.length > 0 && (
-        <div>
+        <div className="border-t-2 border-ink/10 pt-4">
           <button
             onClick={() => setShowAll((v) => !v)}
             className="text-xs font-bold text-accent hover:underline"
@@ -75,9 +75,9 @@ export default function SummaryCard({ summary }: { summary: AISummary }) {
       )}
 
       {summary.suggestions.length > 0 && (
-        <div className="bg-accent/10 rounded-xl p-4 space-y-2">
-          <h3 className="text-sm font-bold text-accent">What you can do</h3>
-          <ul className="space-y-1">
+        <div className="border-t-2 border-ink/10 pt-4 space-y-2">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-accent">What you can do</h3>
+          <ul className="space-y-1.5">
             {summary.suggestions.map((s, idx) => (
               <li key={idx} className="text-sm text-ink leading-relaxed">{s}</li>
             ))}

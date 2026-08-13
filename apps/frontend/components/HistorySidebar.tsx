@@ -66,7 +66,7 @@ export default function HistorySidebar({
           </svg>
         </button>
       </div>
-      <div className="p-3">
+      <div className="px-3 pt-3 pb-2">
         <button
           onClick={onNewChat}
           disabled={disabled}
@@ -78,20 +78,27 @@ export default function HistorySidebar({
           New chat
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
+      <div className="flex-1 overflow-y-auto">
         {threads.length === 0 && (
-          <p className="text-xs text-inkSoft font-mono px-2 py-4 text-center">No history yet</p>
+          <p className="text-xs text-inkSoft px-4 py-6 text-center">No history yet</p>
         )}
-        {threads.map((t) => (
+        {threads.map((t, idx) => (
           <button
             key={t.threadId}
             onClick={() => onSelect(t.threadId)}
-            className={`w-full text-left text-sm px-3 py-2.5 rounded-xl truncate transition-colors ${
-              selectedThreadId === t.threadId ? "bg-sage-light text-sage-dark font-medium" : "text-ink hover:bg-sage-light/30"
+            className={`w-full text-left px-4 py-3 border-b border-ink/10 transition-colors relative ${
+              selectedThreadId === t.threadId ? "bg-sage-light/40" : "hover:bg-sage-light/20"
             }`}
-            title={t.label}
           >
-            {t.label}
+            {selectedThreadId === t.threadId && (
+              <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
+            )}
+            <p className="text-[10px] font-bold text-inkSoft uppercase tracking-wide mb-0.5">
+              Thread {idx + 1}
+            </p>
+            <p className={`text-sm truncate ${selectedThreadId === t.threadId ? "font-semibold text-ink" : "text-ink"}`}>
+              {t.label}
+            </p>
           </button>
         ))}
       </div>
