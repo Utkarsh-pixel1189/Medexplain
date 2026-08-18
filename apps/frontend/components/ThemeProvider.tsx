@@ -2,14 +2,14 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-export type ThemeName = "blue" | "maroon" | "black" | "red" | "purple";
+export type ThemeName = "blue" | "maroon" | "black" | "red" | "yellow";
 
 export const THEMES: Record<ThemeName, { rgb: string; darkRgb: string; label: string; swatch: string }> = {
   blue: { rgb: "29 116 242", darkRgb: "21 93 199", label: "Blue", swatch: "#1D74F2" },
   maroon: { rgb: "128 0 32", darkRgb: "92 0 23", label: "Maroon", swatch: "#800020" },
   black: { rgb: "17 17 17", darkRgb: "0 0 0", label: "Black", swatch: "#111111" },
   red: { rgb: "226 55 68", darkRgb: "196 32 48", label: "Red", swatch: "#E23744" },
-  purple: { rgb: "124 58 237", darkRgb: "109 40 217", label: "Purple", swatch: "#7C3AED" },
+  yellow: { rgb: "217 164 6", darkRgb: "180 135 0", label: "Yellow", swatch: "#D9A406" },
 };
 
 const STORAGE_KEY = "medexplain-theme";
