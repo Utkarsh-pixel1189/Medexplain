@@ -28,7 +28,7 @@ export default function TiltImage() {
       ref={wrapRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="w-full max-h-[42vh] overflow-hidden rounded-[2rem] border-2 border-ink animate-rise-in animate-shimmer"
+      className="w-full max-h-[54vh] overflow-hidden rounded-[2rem] border-2 border-ink animate-rise-in animate-shimmer"
     >
       <div ref={imgRef} className="transition-transform duration-300 ease-out will-change-transform">
         <Image
