@@ -2,8 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body {
-  @apply bg-paper text-ink font-body antialiased overflow-x-hidden;
+:root {
+  --accent-rgb: 29 116 242;
+  --accent-dark-rgb: 21 93 199;
+}
+
+html,body {
+  @apply bg-paper text-ink font-body antialiased;
 }
 
 :focus-visible {

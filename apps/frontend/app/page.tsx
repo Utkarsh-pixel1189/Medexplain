@@ -1,7 +1,7 @@
 import Marker from "@/components/Marker";
 import StepCard from "@/components/StepCard";
 import TiltImage from "@/components/TiltImage";
-
+import ThemeSwitcher from "@/components/ThemeSwitcher";
 const STEPS = [
   {
     n: "01",
@@ -44,6 +44,7 @@ export default function HomePage() {
       </section>
 
       <TiltImage />
+      <ThemeSwitcher />
 
       <section className="flex flex-wrap gap-3 justify-center">
         <a
