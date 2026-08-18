@@ -15,9 +15,21 @@ export default function Header() {
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
-    api.me().then(setUser).catch(() => setUser(null));
+    const cached = sessionStorage.getItem("medexplain-user");
+    if (cached) {
+      setUser(JSON.parse(cached));
+    }
+    api.me()
+      .then((u) => {
+        setUser(u);
+        sessionStorage.setItem("medexplain-user", JSON.stringify(u));
+      })
+      .catch(() => {
+        setUser(null);
+        sessionStorage.removeItem("medexplain-user");
+      });
   }, []);
-
+  
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (optionsRef.current && !optionsRef.current.contains(e.target as Node)) {
@@ -31,6 +43,7 @@ export default function Header() {
   async function handleLogout() {
     await api.logout();
     setUser(null);
+    sessionStorage.removeItem("medexplain-user");
     setMenuOpen(false);
     router.push("/login");
   }

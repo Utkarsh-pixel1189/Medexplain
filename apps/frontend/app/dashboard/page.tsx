@@ -162,7 +162,17 @@ export default function DashboardPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-inkSoft font-mono">Loading…</p>
+        <div className="border-2 border-ink/15 rounded-2xl overflow-hidden bg-paper">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className={`px-4 py-3 sm:px-5 flex items-center gap-3 animate-pulse ${i !== 3 ? "border-b border-ink/10" : ""}`}>
+              <div className="w-8 h-8 rounded-full bg-mist shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 bg-mist rounded w-1/3" />
+                <div className="h-2.5 bg-mist/60 rounded w-1/5" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <ReportList reports={sortedReports} onDelete={handleDelete} onRenamed={refresh} />
       )}

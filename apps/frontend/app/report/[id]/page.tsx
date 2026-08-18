@@ -128,8 +128,14 @@ export default function ReportViewerPage({ params }: { params: { id: string } })
   }
 
   if (error) return <p className="text-sm text-pulse px-4">{error}</p>;
-  if (!report) return <p className="text-sm text-inkSoft font-mono px-4">Loading…</p>;
-
+  if (!report) {
+    return (
+      <div className="px-4 space-y-3 animate-pulse">
+        <div className="h-6 bg-mist rounded w-1/2" />
+        <div className="h-40 bg-mist/60 rounded-2xl" />
+      </div>
+    );
+  }
   const selectedThread = threads.find((t) => t.threadId === selectedThreadId);
   const isReady = report.status === "parsed";
 
